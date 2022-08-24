@@ -40,12 +40,6 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			log.Printf("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
 
 			switch update.Message.Text {
-			case "Подписаться":
-				b.handleSubscribeComand(update.Message)
-
-			case "Отписаться":
-				b.handleUnsubscribeComand(update.Message)
-
 			case "ДО \"Россети\"":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
@@ -111,56 +105,119 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					log.Printf("Не удалось раскрыть список прочих ИП: %s", err)
 				}
 
-			case "ПАО \"ФСК ЕЭС\"":
-				b.subdcribe(update.Message, fsk_ees)
+				// case "ПАО \"ФСК ЕЭС\"":
+				// 	b.subdcribe(update.Message, fsk_ees)
 
-			case "ПАО \"Россети Волга\"":
-				b.subdcribe(update.Message, rosseti_volga)
+				// case "ПАО \"Россети Волга\"":
+				// 	b.subdcribe(update.Message, rosseti_volga)
 
-			case "ПАО \"Россети ЦиП\"":
-				b.subdcribe(update.Message, rosseti_cip)
+				// case "ПАО \"Россети ЦиП\"":
+				// 	b.subdcribe(update.Message, rosseti_cip)
 
-			case "ПАО \"Россети Юг\"":
-				b.subdcribe(update.Message, rosseti_yug)
+				// case "ПАО \"Россети Юг\"":
+				// 	b.subdcribe(update.Message, rosseti_yug)
 
-			case "ПАО \"Россети Центр\"":
-				b.subdcribe(update.Message, rosseti_centr)
+				// case "ПАО \"Россети Центр\"":
+				// 	b.subdcribe(update.Message, rosseti_centr)
 
-			case "ПАО \"Россети Сибири\"":
-				b.subdcribe(update.Message, rosseti_sibir)
+				// case "ПАО \"Россети Сибири\"":
+				// 	b.subdcribe(update.Message, rosseti_sibir)
 
-			case "ПАО \"МРСК Урала\"":
-				b.subdcribe(update.Message, rosseti_ural)
+				// case "ПАО \"МРСК Урала\"":
+				// 	b.subdcribe(update.Message, rosseti_ural)
 
-			case "ПАО \"Россети Северо-Запада\"":
-				b.subdcribe(update.Message, rosseti_sev_zap)
+				// case "ПАО \"Россети Северо-Запада\"":
+				// 	b.subdcribe(update.Message, rosseti_sev_zap)
 
-			case "ПАО \"Россети Северный Кавказ\"":
-				b.subdcribe(update.Message, rosseti_sev_kav)
+				// case "ПАО \"Россети Северный Кавказ\"":
+				// 	b.subdcribe(update.Message, rosseti_sev_kav)
 
-			case "ПАО \"РусГидро\"":
-				b.subdcribe(update.Message, rusgydro)
+				// case "ПАО \"РусГидро\"":
+				// 	b.subdcribe(update.Message, rusgydro)
 
-			case "АО \"ДРСК\"":
-				b.subdcribe(update.Message, drsk)
+				// case "АО \"ДРСК\"":
+				// 	b.subdcribe(update.Message, drsk)
 
-			case "АО \"Концерн Росэнергоатом\"":
-				b.subdcribe(update.Message, krea)
+				// case "АО \"Концерн Росэнергоатом\"":
+				// 	b.subdcribe(update.Message, krea)
 
-			case "ОАО \"Сетевая компания\"":
-				b.subdcribe(update.Message, setevaya_komp)
+				// case "ОАО \"Сетевая компания\"":
+				// 	b.subdcribe(update.Message, setevaya_komp)
 
 			}
+
+			// 		tgbotapi.NewKeyboardButton("ПАО \"ФСК ЕЭС\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Волга\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети ЦиП\""),
+			// 	),
+			// 	tgbotapi.NewKeyboardButtonRow(
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Юг\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Центр\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Сибири\""),
+			// 	),
+			// 	tgbotapi.NewKeyboardButtonRow(
+			// 		tgbotapi.NewKeyboardButton("ПАО \"МРСК Урала\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северо-Запада\""),
+			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северный Кавказ\""),
 
 		} else if update.CallbackQuery != nil {
-			log.Printf(update.CallbackQuery.Data)
+			q := update.CallbackQuery.Data
+			switch q {
+			case "subscribe":
+				b.handleSubscribeComand(update.CallbackQuery.Message.Chat.ID)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
 
-			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+			case "unsubscribed":
+				b.handleUnsubscribeComand(update.CallbackQuery.Message.Chat.ID)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
 
-			_, err := b.bot.Send(msg)
-			if err != nil {
-				log.Println(err)
+			case "rosseti":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Волга\"", "s"+rosseti_volga),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Юг\"", "s"+rosseti_yug),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Центр\"", "s"+rosseti_centr),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "s"+rosseti_ural),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северо-Запада\"", "s"+rosseti_sev_zap),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северный Кавказ\"", "s"+rosseti_sev_kav),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+
+			default:
+				first_letter := string([]rune(q)[0])
+				code := string([]rune(q)[1:5])
+				if first_letter == "s" {
+					b.subdcribe(update.CallbackQuery.Message.Chat.ID, code)
+				}
+
 			}
+
+			// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+
+			// _, err := b.bot.Send(msg)
+			// if err != nil {
+			// 	log.Println(err)
+			// }
 
 		}
 	}

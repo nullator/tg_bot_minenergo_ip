@@ -40,12 +40,12 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 			return err
 		}
 	case commandSubscribe:
-		err := b.handleSubscribeComand(message)
+		err := b.handleSubscribeComand(message.Chat.ID)
 		if err != nil {
 			return err
 		}
 	case commandUnsubscribe:
-		err := b.handleUnsubscribeComand(message)
+		err := b.handleUnsubscribeComand(message.Chat.ID)
 		if err != nil {
 			return err
 		}
@@ -54,45 +54,44 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 }
 
 func (b *Bot) handleStartComand(message *tgbotapi.Message) error {
-	var numericKeyboard = tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Подписаться"),
-			tgbotapi.NewKeyboardButton("Отписаться"),
+	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
 		),
 	)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Ты можешь подписаться или отписаться от рассылки на уведомления о размещении материалов проектов ИП:")
 	msg.ReplyMarkup = numericKeyboard
 	_, err := b.bot.Send(msg)
 
-	log.Println("Выполнена команда Start\n ")
+	log.Println("Выполнена команда Start")
 	return err
 }
 
-func (b *Bot) handleSubscribeComand(message *tgbotapi.Message) error {
-	var numericKeyboard = tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("ДО \"Россети\""),
-			tgbotapi.NewKeyboardButton("ДО \"РусГидро\""),
-			tgbotapi.NewKeyboardButton("Прочие"),
+func (b *Bot) handleSubscribeComand(chatID int64) error {
+	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "rosseti"),
+			tgbotapi.NewInlineKeyboardButtonData("Прочие", "other"),
 		),
 	)
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Выбери группу субъектов:")
+	msg := tgbotapi.NewMessage(chatID, "Выбери группу субъектов:")
 	msg.ReplyMarkup = numericKeyboard
 	_, err := b.bot.Send(msg)
 
-	log.Println("Выполнена команда Subscribe\n ")
+	log.Println("Выполнена команда Subscribe")
 	return err
 }
 
-func (b *Bot) handleUnsubscribeComand(message *tgbotapi.Message) error {
+func (b *Bot) handleUnsubscribeComand(chatID int64) error {
 	b.base.GetAll(rosseti_volga)
 
-	log.Println("Выполнена команда Unsubscribe\n ")
+	log.Println("Выполнена команда Unsubscribe")
 	return nil
 }
 
-func (b *Bot) subdcribe(message *tgbotapi.Message, ip string) error {
-	err := b.base.Save(fmt.Sprintf("%d", message.Chat.ID), "subscride", ip)
+func (b *Bot) subdcribe(chatID int64, ip string) error {
+	err := b.base.Save(fmt.Sprintf("%d", chatID), "subscride", ip)
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
 	}
@@ -105,9 +104,9 @@ func (b *Bot) subdcribe(message *tgbotapi.Message, ip string) error {
 	)
 	// msg_text := fmt.Sprintf("Выполнена подписка на %s", message.Text)
 	news_txt, err := parser_ip.Parse(ip)
-	msg_text := fmt.Sprintf("Последняя запись %s: %s", message.Text, news_txt)
+	msg_text := fmt.Sprintf("Последняя запись: %s", news_txt)
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+	msg := tgbotapi.NewMessage(chatID, msg_text)
 	msg.ReplyMarkup = numericKeyboard
 	_, err = b.bot.Send(msg)
 
