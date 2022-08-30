@@ -94,6 +94,10 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
 	}
+	err = b.base.Save(ip, "subscride", fmt.Sprintf("%d", chatID))
+	if err != nil {
+		log.Printf("Ошибка сохранения в БД данных о подписке")
+	}
 
 	// // msg_text := fmt.Sprintf("Выполнена подписка на %s", message.Text)
 	// news_txt, err := parser_ip.Parse(ip)
@@ -106,9 +110,19 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 }
 
 func (b *Bot) unsubscribe(chatID int64, ip string) error {
-	err := b.base.Save(fmt.Sprintf("%d", chatID), "", ip)
+	err := b.base.Save(fmt.Sprintf("%d", chatID), "unsubscride", ip)
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
+	}
+	err = b.base.Save(ip, "unsubscride", fmt.Sprintf("%d", chatID))
+	if err != nil {
+		log.Printf("Ошибка сохранения в БД данных о подписке")
+	}
+
+	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", chatID))
+	log.Println(ip_list)
+	if err != nil {
+		log.Printf("Ошибка чтения в БД данных о подписке")
 	}
 
 	return err

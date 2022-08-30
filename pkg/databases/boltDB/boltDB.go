@@ -1,7 +1,7 @@
 package boltdb
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/boltdb/bolt"
 )
@@ -40,15 +40,19 @@ func (db *Database) Get(key string, bucket string) (string, error) {
 }
 
 func (db *Database) GetAll(bucket string) (map[string]string, error) {
-	// value := make(map[string]string)
+	value := make(map[string]string)
 
 	err := db.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		b.ForEach(func(k, v []byte) error {
-			fmt.Printf("key=%s, value=%s\n", k, v)
-			return nil
-		})
+		log.Println(b)
+		if b != nil {
+			return b.ForEach(func(k, v []byte) error {
+				value[string(k)] = string(v)
+				log.Printf("key=%s, value=%s\n", k, v)
+				return nil
+			})
+		}
 		return nil
 	})
-	return nil, err
+	return value, err
 }
