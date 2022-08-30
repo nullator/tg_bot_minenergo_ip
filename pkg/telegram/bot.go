@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"fmt"
 	"log"
 	"tg_bot_minenergo_ip/pkg/databases"
 
@@ -62,17 +63,40 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				}
 
 			case "unsubscribe":
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "u_rosseti"),
-						tgbotapi.NewInlineKeyboardButtonData("Прочие", "u_other"),
-					),
-				)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
+				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+				subscribe_ip_list := make(map[int]string)
+				i := 0
+				for v, k := range ip_list {
+					if k == "subscride" {
+						subscribe_ip_list[i] = v
+						i += 1
+					}
 				}
+
+				if err != nil {
+					log.Printf("Ошибка чтения из БД данных о подписке")
+				}
+
+				if len(subscribe_ip_list) > 0 {
+					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+					for _, v := range subscribe_ip_list {
+						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Тест", "u"+v)))
+					}
+
+					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					_, err = b.bot.Send(msg)
+					if err != nil {
+						log.Println(err)
+					}
+
+				}
+
+				// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+				// 	tgbotapi.NewInlineKeyboardRow(
+				// 		tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "u_rosseti"),
+				// 		tgbotapi.NewInlineKeyboardButtonData("Прочие", "u_other"),
+				// 	),
+				// )
 
 			case "s_rosseti":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(

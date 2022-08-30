@@ -122,7 +122,7 @@ func (b *Bot) unsubscribe(chatID int64, ip string) error {
 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", chatID))
 	log.Println(ip_list)
 	if err != nil {
-		log.Printf("Ошибка чтения в БД данных о подписке")
+		log.Printf("Ошибка чтения из БД данных о подписке")
 	}
 
 	return err
