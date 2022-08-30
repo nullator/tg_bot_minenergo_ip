@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	parser_ip "tg_bot_minenergo_ip/pkg/parser"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -90,25 +89,27 @@ func (b *Bot) handleUnsubscribeComand(chatID int64) error {
 	return nil
 }
 
-func (b *Bot) subdcribe(chatID int64, ip string) error {
+func (b *Bot) subscribe(chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "subscride", ip)
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
 	}
 
-	var numericKeyboard = tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Подписаться"),
-			tgbotapi.NewKeyboardButton("Отписаться"),
-		),
-	)
-	// msg_text := fmt.Sprintf("Выполнена подписка на %s", message.Text)
-	news_txt, err := parser_ip.Parse(ip)
-	msg_text := fmt.Sprintf("Последняя запись: %s", news_txt)
+	// // msg_text := fmt.Sprintf("Выполнена подписка на %s", message.Text)
+	// news_txt, err := parser_ip.Parse(ip)
+	// msg_text := fmt.Sprintf("Последняя запись: %s", news_txt)
 
-	msg := tgbotapi.NewMessage(chatID, msg_text)
-	msg.ReplyMarkup = numericKeyboard
-	_, err = b.bot.Send(msg)
+	// msg := tgbotapi.NewMessage(chatID, msg_text)
+	// _, err = b.bot.Send(msg)
+
+	return err
+}
+
+func (b *Bot) unsubscribe(chatID int64, ip string) error {
+	err := b.base.Save(fmt.Sprintf("%d", chatID), "", ip)
+	if err != nil {
+		log.Printf("Ошибка сохранения в БД данных о подписке")
+	}
 
 	return err
 }

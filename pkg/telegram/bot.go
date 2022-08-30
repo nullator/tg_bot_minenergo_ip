@@ -39,162 +39,109 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			log.Printf("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
 
-			switch update.Message.Text {
-			case "ДО \"Россети\"":
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonURL("1.com", "http://1.com"),
-						tgbotapi.NewInlineKeyboardButtonData("2", "2"),
-						tgbotapi.NewInlineKeyboardButtonData("3", "3"),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("4", "4"),
-						tgbotapi.NewInlineKeyboardButtonData("5", "5"),
-						tgbotapi.NewInlineKeyboardButtonData("6", "6"),
-					),
-				)
-				// var numericKeyboard = tgbotapi.NewReplyKeyboard(
-				// 	tgbotapi.NewKeyboardButtonRow(
-				// 		tgbotapi.NewKeyboardButton("ПАО \"ФСК ЕЭС\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Волга\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети ЦиП\""),
-				// 	),
-				// 	tgbotapi.NewKeyboardButtonRow(
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Юг\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Центр\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Сибири\""),
-				// 	),
-				// 	tgbotapi.NewKeyboardButtonRow(
-				// 		tgbotapi.NewKeyboardButton("ПАО \"МРСК Урала\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северо-Запада\""),
-				// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северный Кавказ\""),
-				// 	),
-				// )
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выбери субъект электроэнергетики:")
-				msg.ReplyMarkup = numericKeyboard
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Printf("Не удалось раскрыть список ИП ДО Россети: %s", err)
-				}
-
-			case "ДО \"РусГидро\"":
-				var numericKeyboard = tgbotapi.NewReplyKeyboard(
-					tgbotapi.NewKeyboardButtonRow(
-						tgbotapi.NewKeyboardButton("ПАО \"РусГидро\""),
-						tgbotapi.NewKeyboardButton("АО \"ДРСК\""),
-					),
-				)
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выбери субъект электроэнергетики:")
-				msg.ReplyMarkup = numericKeyboard
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Printf("Не удалось раскрыть список ИП ДО РусГидро: %s", err)
-				}
-
-			case "Прочие":
-				var numericKeyboard = tgbotapi.NewReplyKeyboard(
-					tgbotapi.NewKeyboardButtonRow(
-						tgbotapi.NewKeyboardButton("АО \"Концерн Росэнергоатом\""),
-						tgbotapi.NewKeyboardButton("ОАО \"Сетевая компания\""),
-					),
-				)
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выбери субъект электроэнергетики:")
-				msg.ReplyMarkup = numericKeyboard
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Printf("Не удалось раскрыть список прочих ИП: %s", err)
-				}
-
-				// case "ПАО \"ФСК ЕЭС\"":
-				// 	b.subdcribe(update.Message, fsk_ees)
-
-				// case "ПАО \"Россети Волга\"":
-				// 	b.subdcribe(update.Message, rosseti_volga)
-
-				// case "ПАО \"Россети ЦиП\"":
-				// 	b.subdcribe(update.Message, rosseti_cip)
-
-				// case "ПАО \"Россети Юг\"":
-				// 	b.subdcribe(update.Message, rosseti_yug)
-
-				// case "ПАО \"Россети Центр\"":
-				// 	b.subdcribe(update.Message, rosseti_centr)
-
-				// case "ПАО \"Россети Сибири\"":
-				// 	b.subdcribe(update.Message, rosseti_sibir)
-
-				// case "ПАО \"МРСК Урала\"":
-				// 	b.subdcribe(update.Message, rosseti_ural)
-
-				// case "ПАО \"Россети Северо-Запада\"":
-				// 	b.subdcribe(update.Message, rosseti_sev_zap)
-
-				// case "ПАО \"Россети Северный Кавказ\"":
-				// 	b.subdcribe(update.Message, rosseti_sev_kav)
-
-				// case "ПАО \"РусГидро\"":
-				// 	b.subdcribe(update.Message, rusgydro)
-
-				// case "АО \"ДРСК\"":
-				// 	b.subdcribe(update.Message, drsk)
-
-				// case "АО \"Концерн Росэнергоатом\"":
-				// 	b.subdcribe(update.Message, krea)
-
-				// case "ОАО \"Сетевая компания\"":
-				// 	b.subdcribe(update.Message, setevaya_komp)
-
+		} else if update.CallbackQuery != nil {
+			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				log.Println(err)
 			}
 
-			// 		tgbotapi.NewKeyboardButton("ПАО \"ФСК ЕЭС\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Волга\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети ЦиП\""),
-			// 	),
-			// 	tgbotapi.NewKeyboardButtonRow(
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Юг\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Центр\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Сибири\""),
-			// 	),
-			// 	tgbotapi.NewKeyboardButtonRow(
-			// 		tgbotapi.NewKeyboardButton("ПАО \"МРСК Урала\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северо-Запада\""),
-			// 		tgbotapi.NewKeyboardButton("ПАО \"Россети Северный Кавказ\""),
-
-		} else if update.CallbackQuery != nil {
 			q := update.CallbackQuery.Data
 			switch q {
 			case "subscribe":
-				b.handleSubscribeComand(update.CallbackQuery.Message.Chat.ID)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "s_rosseti"),
+						tgbotapi.NewInlineKeyboardButtonData("Прочие", "s_other"),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
 
-			case "unsubscribed":
-				b.handleUnsubscribeComand(update.CallbackQuery.Message.Chat.ID)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+			case "unsubscribe":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "u_rosseti"),
+						tgbotapi.NewInlineKeyboardButtonData("Прочие", "u_other"),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
 
-			case "rosseti":
+			case "s_rosseti":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Волга\"", "s"+rosseti_volga),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
 					),
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Юг\"", "s"+rosseti_yug),
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Центр\"", "s"+rosseti_centr),
+					),
+					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
 					),
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "s"+rosseti_ural),
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северо-Запада\"", "s"+rosseti_sev_zap),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северный Кавказ\"", "s"+rosseti_sev_kav),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+
+			case "s_other":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "s"+rusgydro),
+						tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "s"+krea),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+
+			case "u_rosseti":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"ФСК ЕЭС\"", "u"+fsk_ees),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Волга\"", "u"+rosseti_volga),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Юг\"", "u"+rosseti_yug),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Центр\"", "u"+rosseti_centr),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сибири\"", "u"+rosseti_sibir),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "u"+rosseti_cip),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "u"+rosseti_ural),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северо-Запада\"", "u"+rosseti_sev_zap),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+
+			case "u_other":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "u"+rusgydro),
+						tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "u"+krea),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
@@ -207,18 +154,36 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				first_letter := string([]rune(q)[0])
 				code := string([]rune(q)[1:5])
 				if first_letter == "s" {
-					b.subdcribe(update.CallbackQuery.Message.Chat.ID, code)
+					b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
+
+					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+							tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+						),
+					)
+					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						log.Println(err)
+					}
 				}
+				if first_letter == "u" {
+					b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
+					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+							tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+						),
+					)
+					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 			}
-
-			// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
-
-			// _, err := b.bot.Send(msg)
-			// if err != nil {
-			// 	log.Println(err)
-			// }
-
 		}
 	}
 }
