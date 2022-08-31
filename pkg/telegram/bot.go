@@ -222,7 +222,7 @@ func (b *Bot) LoadIP() {
 			if err != nil {
 				log.Printf("Ошибка чтения из БД при парсинге новости: %s", err)
 			}
-			if new_report != old_report {
+			if (new_report != old_report) && (new_report != "ERROR") {
 				log.Printf("Обнаружена новая запись ИП %s: %s", getIPname(ip), new_report)
 				b.make_notify(ip, new_report)
 				err = b.base.Save(ip, new_report, ip)

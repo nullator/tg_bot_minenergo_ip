@@ -22,7 +22,7 @@ func Parse(ip_code string) (string, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("Не удалось выполнить запрос к серверу: %s", err)
-		return "", err
+		return "ERROR", err
 	}
 	if res.StatusCode != 200 {
 		log.Printf("Ошибка запроса к серверу: (code %d) %s", res.StatusCode, err)
@@ -30,7 +30,7 @@ func Parse(ip_code string) (string, error) {
 	doc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
 		log.Printf("Не удалось распарсить страницу: %s", err)
-		return "", err
+		return "ERROR", err
 	}
 	defer res.Body.Close()
 
