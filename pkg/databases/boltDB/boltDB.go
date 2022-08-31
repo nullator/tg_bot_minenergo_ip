@@ -48,7 +48,6 @@ func (db *Database) GetAll(bucket string) (map[string]string, error) {
 		if b != nil {
 			return b.ForEach(func(k, v []byte) error {
 				value[string(k)] = string(v)
-				log.Printf("key=%s, value=%s\n", k, v)
 				return nil
 			})
 		}

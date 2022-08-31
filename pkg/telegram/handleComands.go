@@ -93,19 +93,27 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "subscride", ip)
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
+		return err
 	}
 	err = b.base.Save(ip, "subscride", fmt.Sprintf("%d", chatID))
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
+		return err
 	}
 
-	// // msg_text := fmt.Sprintf("Выполнена подписка на %s", message.Text)
-	// news_txt, err := parser_ip.Parse(ip)
-	// msg_text := fmt.Sprintf("Последняя запись: %s", news_txt)
-
-	// msg := tgbotapi.NewMessage(chatID, msg_text)
-	// _, err = b.bot.Send(msg)
-
+	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+		),
+	)
+	msg_text := "Выполнена подписка на " + getIPname(ip)
+	msg := tgbotapi.NewMessage(chatID, msg_text)
+	msg.ReplyMarkup = numericKeyboard
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		log.Println(err)
+	}
 	return err
 }
 
@@ -113,17 +121,57 @@ func (b *Bot) unsubscribe(chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "unsubscride", ip)
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
+		return err
 	}
 	err = b.base.Save(ip, "unsubscride", fmt.Sprintf("%d", chatID))
 	if err != nil {
 		log.Printf("Ошибка сохранения в БД данных о подписке")
+		return err
 	}
 
-	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", chatID))
-	log.Println(ip_list)
+	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+		),
+	)
+	msg_text := "Выполнена отписка от " + getIPname(ip)
+	msg := tgbotapi.NewMessage(chatID, msg_text)
+	msg.ReplyMarkup = numericKeyboard
+	_, err = b.bot.Send(msg)
 	if err != nil {
-		log.Printf("Ошибка чтения из БД данных о подписке")
+		log.Println(err)
 	}
 
 	return err
+}
+
+func getIPname(ip string) string {
+	switch ip {
+	case rosseti_volga:
+		return "ПАО \"Россети Волга\""
+	case fsk_ees:
+		return "ПАО \"ФСК ЕЭС\""
+	case rosseti_cip:
+		return "ПАО \"Россети Центр и Приволжье\""
+	case rosseti_yug:
+		return "ПАО \"Россети Юг\""
+	case rosseti_centr:
+		return "ПАО \"Россети Центр\""
+	case rosseti_sibir:
+		return "ПАО \"Россети Сибирь\""
+	case rosseti_ural:
+		return "ОАО \"МРСК Урала\""
+	case rosseti_sev_zap:
+		return "ПАО \"Россети Северо-Запад\""
+	case rosseti_sev_kav:
+		return "ПАО \"Россети Северный Кавказ\""
+	case rusgydro:
+		return "ПАО \"РусГидро\""
+	case drsk:
+		return "ПАО \"РусГидро\""
+	case krea:
+		return "АО \"Концерн Росэнергоатом\""
+	}
+	return ""
 }

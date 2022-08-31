@@ -64,6 +64,10 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "unsubscribe":
 				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+				if err != nil {
+					log.Printf("Ошибка чтения из БД данных о подписке")
+				}
+
 				subscribe_ip_list := make(map[int]string)
 				i := 0
 				for v, k := range ip_list {
@@ -73,14 +77,25 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					}
 				}
 
-				if err != nil {
-					log.Printf("Ошибка чтения из БД данных о подписке")
-				}
-
 				if len(subscribe_ip_list) > 0 {
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-					for _, v := range subscribe_ip_list {
-						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Тест", "u"+v)))
+					i = 0
+					n := len(subscribe_ip_list) / 2
+					for n > 0 {
+						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[i]), "u"+subscribe_ip_list[i]),
+							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[i+1]), "u"+subscribe_ip_list[i+1]),
+						),
+						)
+						i += 2
+						n -= 1
+					}
+
+					if len(subscribe_ip_list)%2 == 1 {
+						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[len(subscribe_ip_list)-1]), "u"+subscribe_ip_list[len(subscribe_ip_list)-1]),
+						),
+						)
 					}
 
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
@@ -114,7 +129,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					),
 					tgbotapi.NewInlineKeyboardRow(
 						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "s"+rosseti_ural),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северо-Запада\"", "s"+rosseti_sev_zap),
+						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
@@ -180,32 +195,32 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				if first_letter == "s" {
 					b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
 
-					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-						tgbotapi.NewInlineKeyboardRow(
-							tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-							tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-						),
-					)
-					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err := b.bot.Send(msg)
-					if err != nil {
-						log.Println(err)
-					}
+					// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					// 	tgbotapi.NewInlineKeyboardRow(
+					// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+					// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+					// 	),
+					// )
+					// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					// _, err := b.bot.Send(msg)
+					// if err != nil {
+					// 	log.Println(err)
+					// }
 				}
 				if first_letter == "u" {
 					b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
-					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-						tgbotapi.NewInlineKeyboardRow(
-							tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-							tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-						),
-					)
-					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err := b.bot.Send(msg)
-					if err != nil {
-						log.Println(err)
-					}
+					// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					// 	tgbotapi.NewInlineKeyboardRow(
+					// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+					// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+					// 	),
+					// )
+					// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					// _, err := b.bot.Send(msg)
+					// if err != nil {
+					// 	log.Println(err)
+					// }
 				}
 			}
 		}
