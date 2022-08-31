@@ -243,7 +243,7 @@ func (b *Bot) make_notify(ip string, news string) {
 
 	for id, key := range users {
 		if key == "subscride" {
-			msg_text := "Размещены материалы " + getIPname(ip) + ". Последняя запись:/n " + news
+			msg_text := "Размещены материалы ИП **" + getIPname(ip) + "**:\n" + news
 			id_int64, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
 				log.Println(err)
