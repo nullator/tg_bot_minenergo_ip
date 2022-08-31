@@ -46,6 +46,7 @@ func main() {
 	base := boltdb.NewDatabase(db)
 
 	tg_bot := telegram.NewBot(bot, base)
+	go tg_bot.LoadIP()
 	if err := tg_bot.Start(); err != nil {
 		log.Fatalln(err)
 	}

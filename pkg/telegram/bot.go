@@ -3,7 +3,10 @@ package telegram
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"tg_bot_minenergo_ip/pkg/databases"
+	parser_ip "tg_bot_minenergo_ip/pkg/parser"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -193,36 +196,65 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				first_letter := string([]rune(q)[0])
 				code := string([]rune(q)[1:5])
 				if first_letter == "s" {
+					log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, getIPname(code))
 					b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
-
-					// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					// 	tgbotapi.NewInlineKeyboardRow(
-					// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-					// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-					// 	),
-					// )
-					// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					// _, err := b.bot.Send(msg)
-					// if err != nil {
-					// 	log.Println(err)
-					// }
 				}
 				if first_letter == "u" {
+					log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, getIPname(code))
 					b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
-
-					// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					// 	tgbotapi.NewInlineKeyboardRow(
-					// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-					// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-					// 	),
-					// )
-					// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					// _, err := b.bot.Send(msg)
-					// if err != nil {
-					// 	log.Println(err)
-					// }
 				}
 			}
 		}
 	}
+}
+
+func (b *Bot) LoadIP() {
+	full_ip_list := []string{rosseti_volga, fsk_ees, rosseti_cip, rosseti_yug, rosseti_centr,
+		rosseti_sibir, rosseti_ural, rosseti_sev_zap, rosseti_sev_kav, rusgydro, drsk, krea}
+
+	for {
+		for _, ip := range full_ip_list {
+			new_report, err := parser_ip.Parse(ip)
+			if err != nil {
+				log.Printf("Ошибка парсинга: %s", err)
+			}
+			old_report, err := b.base.Get(ip, ip)
+			if err != nil {
+				log.Printf("Ошибка чтения из БД при парсинге новости: %s", err)
+			}
+			if new_report != old_report {
+				log.Printf("Обнаружена новая запись ИП %s: %s", getIPname(ip), new_report)
+				b.make_notify(ip, new_report)
+				err = b.base.Save(ip, new_report, ip)
+				if err != nil {
+					log.Printf("Ошибка сохранения в БД новой новости по ИП: %s", err)
+				}
+			}
+		}
+		time.Sleep(time.Minute * 10)
+	}
+}
+
+func (b *Bot) make_notify(ip string, news string) {
+	users, err := b.base.GetAll(ip)
+	if err != nil {
+		log.Printf("Ошибка чтения из БД данных о подписчиках")
+	}
+
+	for id, key := range users {
+		if key == "subscride" {
+			msg_text := "Размещены материалы " + getIPname(ip) + ". Последняя запись:/n " + news
+			id_int64, err := strconv.ParseInt(id, 10, 64)
+			if err != nil {
+				log.Println(err)
+			}
+			msg := tgbotapi.NewMessage(id_int64, msg_text)
+			_, err = b.bot.Send(msg)
+			if err != nil {
+				log.Println(err)
+			}
+
+		}
+	}
+
 }

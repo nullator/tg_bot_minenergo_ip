@@ -114,6 +114,7 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 	if err != nil {
 		log.Println(err)
 	}
+	log.Printf("Успешно выполнена подписка на %s", getIPname(ip))
 	return err
 }
 
@@ -142,7 +143,7 @@ func (b *Bot) unsubscribe(chatID int64, ip string) error {
 	if err != nil {
 		log.Println(err)
 	}
-
+	log.Printf("Успешно выполнена отписка от %s", getIPname(ip))
 	return err
 }
 
@@ -169,7 +170,7 @@ func getIPname(ip string) string {
 	case rusgydro:
 		return "ПАО \"РусГидро\""
 	case drsk:
-		return "ПАО \"РусГидро\""
+		return "АО \"ДРСК\""
 	case krea:
 		return "АО \"Концерн Росэнергоатом\""
 	}

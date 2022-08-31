@@ -1,8 +1,6 @@
 package boltdb
 
 import (
-	"log"
-
 	"github.com/boltdb/bolt"
 )
 
@@ -29,8 +27,12 @@ func (db *Database) Get(key string, bucket string) (string, error) {
 	var value string
 	err := db.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		data := b.Get([]byte(key))
-		value = string(data)
+		if b != nil {
+			data := b.Get([]byte(key))
+			value = string(data)
+		} else {
+			value = ""
+		}
 		return nil
 	})
 	if err != nil {
@@ -44,7 +46,6 @@ func (db *Database) GetAll(bucket string) (map[string]string, error) {
 
 	err := db.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		log.Println(b)
 		if b != nil {
 			return b.ForEach(func(k, v []byte) error {
 				value[string(k)] = string(v)
