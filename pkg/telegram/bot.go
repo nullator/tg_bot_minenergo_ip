@@ -93,7 +93,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
 					),
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "start"),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
