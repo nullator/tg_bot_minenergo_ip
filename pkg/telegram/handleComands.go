@@ -101,19 +101,19 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 		return err
 	}
 
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-		),
-	)
-	msg_text := "Выполнена подписка на " + getIPname(ip)
-	msg := tgbotapi.NewMessage(chatID, msg_text)
-	msg.ReplyMarkup = numericKeyboard
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		log.Println(err)
-	}
+	// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	// 	tgbotapi.NewInlineKeyboardRow(
+	// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+	// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+	// 	),
+	// )
+	// msg_text := "Выполнена подписка на " + getIPname(ip)
+	// msg := tgbotapi.NewMessage(chatID, msg_text)
+	// msg.ReplyMarkup = numericKeyboard
+	// _, err = b.bot.Send(msg)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 	log.Printf("Успешно выполнена подписка на %s", getIPname(ip))
 	return err
 }
@@ -130,19 +130,19 @@ func (b *Bot) unsubscribe(chatID int64, ip string) error {
 		return err
 	}
 
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-		),
-	)
-	msg_text := "Выполнена отписка от " + getIPname(ip)
-	msg := tgbotapi.NewMessage(chatID, msg_text)
-	msg.ReplyMarkup = numericKeyboard
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		log.Println(err)
-	}
+	// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	// 	tgbotapi.NewInlineKeyboardRow(
+	// 		tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+	// 		tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+	// 	),
+	// )
+	// msg_text := "Выполнена отписка от " + getIPname(ip)
+	// msg := tgbotapi.NewMessage(chatID, msg_text)
+	// msg.ReplyMarkup = numericKeyboard
+	// _, err = b.bot.Send(msg)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 	log.Printf("Успешно выполнена отписка от %s", getIPname(ip))
 	return err
 }

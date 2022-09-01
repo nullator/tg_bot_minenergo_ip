@@ -66,17 +66,53 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				}
 
 			case "subscribe":
+				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+				if err != nil {
+					log.Printf("Ошибка чтения из БД данных о подписках")
+				}
+
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "s_rosseti"),
-						tgbotapi.NewInlineKeyboardButtonData("Прочие", "s_other"),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "s"+rosseti_volga),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "s"+rosseti_yug),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "s"+rosseti_centr),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "s"+rosseti_ural),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rusgydro, ip_list)+"ПАО \"РусГидро\"", "s"+rusgydro),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
+				_, err = b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
+
+				// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+				// 	tgbotapi.NewInlineKeyboardRow(
+				// 		tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "s_rosseti"),
+				// 		tgbotapi.NewInlineKeyboardButtonData("Прочие", "s_other"),
+				// 	),
+				// )
+				// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				// _, err := b.bot.Send(msg)
+				// if err != nil {
+				// 	log.Println(err)
+				// }
 
 			case "unsubscribe":
 				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
@@ -115,7 +151,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					}
 
 					numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "start"),
 					),
 					)
 
@@ -127,83 +163,31 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 				}
 
-			case "s_rosseti":
-				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
-				if err != nil {
-					log.Printf("Ошибка чтения из БД данных о подписках")
-				}
-
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "s"+rosseti_volga),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "s"+rosseti_yug),
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "s"+rosseti_centr),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "s"+rosseti_ural),
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
-					),
-				)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err = b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
-
-			case "s_other":
-				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
-				if err != nil {
-					log.Printf("Ошибка чтения из БД данных о подписках")
-				}
-
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData(getICO(rusgydro, ip_list)+"ПАО \"РусГидро\"", "s"+rusgydro),
-						tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
-					),
-				)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err = b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
-
-			// case "u_rosseti":
-			// 	ip_list, err := b.base.GetAll(string(update.CallbackQuery.Message.Chat.ID))
+			// case "s_rosseti":
+			// 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
 			// 	if err != nil {
 			// 		log.Printf("Ошибка чтения из БД данных о подписках")
 			// 	}
-			// 	log.Println(ip_list)
-			// 	log.Println(getICO(fsk_ees, ip_list))
+
 			// 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 			// 		tgbotapi.NewInlineKeyboardRow(
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "u"+fsk_ees),
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "u"+rosseti_volga),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "s"+rosseti_volga),
 			// 		),
 			// 		tgbotapi.NewInlineKeyboardRow(
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "u"+rosseti_yug),
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "u"+rosseti_centr),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "s"+rosseti_yug),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "s"+rosseti_centr),
 			// 		),
 			// 		tgbotapi.NewInlineKeyboardRow(
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "u"+rosseti_sibir),
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "u"+rosseti_cip),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
 			// 		),
 			// 		tgbotapi.NewInlineKeyboardRow(
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "u"+rosseti_ural),
-			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Северо-Запада\"", "u"+rosseti_sev_zap),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "s"+rosseti_ural),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
+			// 		),
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
 			// 		),
 			// 	)
 			// 	msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
@@ -212,15 +196,23 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			// 		log.Println(err)
 			// 	}
 
-			// case "u_other":
+			// case "s_other":
+			// 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+			// 	if err != nil {
+			// 		log.Printf("Ошибка чтения из БД данных о подписках")
+			// 	}
+
 			// 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 			// 		tgbotapi.NewInlineKeyboardRow(
-			// 			tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "u"+rusgydro),
-			// 			tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "u"+krea),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rusgydro, ip_list)+"ПАО \"РусГидро\"", "s"+rusgydro),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
+			// 		),
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
 			// 		),
 			// 	)
 			// 	msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-			// 	_, err := b.bot.Send(msg)
+			// 	_, err = b.bot.Send(msg)
 			// 	if err != nil {
 			// 		log.Println(err)
 			// 	}
@@ -231,10 +223,96 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				if first_letter == "s" {
 					log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, getIPname(code))
 					b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
+
+					ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+					if err != nil {
+						log.Printf("Ошибка чтения из БД данных о подписках")
+					}
+
+					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "s"+rosseti_volga),
+						),
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "s"+rosseti_yug),
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "s"+rosseti_centr),
+						),
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
+						),
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "s"+rosseti_ural),
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
+						),
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData(getICO(rusgydro, ip_list)+"ПАО \"РусГидро\"", "s"+rusgydro),
+							tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
+						),
+						tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "start"),
+						),
+					)
+					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					_, err = b.bot.Send(msg)
+					if err != nil {
+						log.Println(err)
+					}
+
 				}
 				if first_letter == "u" {
 					log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, getIPname(code))
 					b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
+
+					ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+					if err != nil {
+						log.Printf("Ошибка чтения из БД данных о подписке")
+					}
+
+					subscribe_ip_list := make(map[int]string)
+					i := 0
+					for v, k := range ip_list {
+						if k == "subscride" {
+							subscribe_ip_list[i] = v
+							i += 1
+						}
+					}
+
+					if len(subscribe_ip_list) > 0 {
+						var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+						i = 0
+						n := len(subscribe_ip_list) / 2
+						for n > 0 {
+							numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[i]), "u"+subscribe_ip_list[i]),
+								tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[i+1]), "u"+subscribe_ip_list[i+1]),
+							),
+							)
+							i += 2
+							n -= 1
+						}
+
+						if len(subscribe_ip_list)%2 == 1 {
+							numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[len(subscribe_ip_list)-1]), "u"+subscribe_ip_list[len(subscribe_ip_list)-1]),
+							),
+							)
+						}
+
+						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+							tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "start"),
+						),
+						)
+
+						msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+						_, err = b.bot.Send(msg)
+						if err != nil {
+							log.Println(err)
+						}
+
+					}
+
 				}
 			}
 		}
