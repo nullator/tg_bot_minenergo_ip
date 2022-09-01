@@ -52,6 +52,19 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			q := update.CallbackQuery.Data
 			switch q {
+			case "start":
+				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
+						tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+					),
+				)
+				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					log.Println(err)
+				}
+
 			case "subscribe":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
@@ -86,8 +99,8 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					n := len(subscribe_ip_list) / 2
 					for n > 0 {
 						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[i]), "u"+subscribe_ip_list[i]),
-							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[i+1]), "u"+subscribe_ip_list[i+1]),
+							tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[i]), "u"+subscribe_ip_list[i]),
+							tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[i+1]), "u"+subscribe_ip_list[i+1]),
 						),
 						)
 						i += 2
@@ -96,10 +109,15 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 					if len(subscribe_ip_list)%2 == 1 {
 						numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-							tgbotapi.NewInlineKeyboardButtonData(getIPname(subscribe_ip_list[len(subscribe_ip_list)-1]), "u"+subscribe_ip_list[len(subscribe_ip_list)-1]),
+							tgbotapi.NewInlineKeyboardButtonData("⛔ "+getIPname(subscribe_ip_list[len(subscribe_ip_list)-1]), "u"+subscribe_ip_list[len(subscribe_ip_list)-1]),
 						),
 						)
 					}
+
+					numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
+					),
+					)
 
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 					_, err = b.bot.Send(msg)
@@ -109,88 +127,103 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 				}
 
-				// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-				// 	tgbotapi.NewInlineKeyboardRow(
-				// 		tgbotapi.NewInlineKeyboardButtonData("ДО ПАО \"Россети\"", "u_rosseti"),
-				// 		tgbotapi.NewInlineKeyboardButtonData("Прочие", "u_other"),
-				// 	),
-				// )
-
 			case "s_rosseti":
+				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+				if err != nil {
+					log.Printf("Ошибка чтения из БД данных о подписках")
+				}
+
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Волга\"", "s"+rosseti_volga),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "s"+fsk_ees),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "s"+rosseti_volga),
 					),
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Юг\"", "s"+rosseti_yug),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Центр\"", "s"+rosseti_centr),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "s"+rosseti_yug),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "s"+rosseti_centr),
 					),
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "s"+rosseti_sibir),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "s"+rosseti_cip),
 					),
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "s"+rosseti_ural),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "s"+rosseti_ural),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Сев-Зап\"", "s"+rosseti_sev_zap),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
+				_, err = b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
 
 			case "s_other":
+				ip_list, err := b.base.GetAll(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID))
+				if err != nil {
+					log.Printf("Ошибка чтения из БД данных о подписках")
+				}
+
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "s"+rusgydro),
-						tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "s"+krea),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(rusgydro, ip_list)+"ПАО \"РусГидро\"", "s"+rusgydro),
+						tgbotapi.NewInlineKeyboardButtonData(getICO(krea, ip_list)+"АО \"Концерн Росэнергоатом\"", "s"+krea),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("⬅️ Отмена", "start"),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
+				_, err = b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
 
-			case "u_rosseti":
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"ФСК ЕЭС\"", "u"+fsk_ees),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Волга\"", "u"+rosseti_volga),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Юг\"", "u"+rosseti_yug),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Центр\"", "u"+rosseti_centr),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Сибири\"", "u"+rosseti_sibir),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети ЦиП\"", "u"+rosseti_cip),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"МРСК Урала\"", "u"+rosseti_ural),
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"Россети Северо-Запада\"", "u"+rosseti_sev_zap),
-					),
-				)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
+			// case "u_rosseti":
+			// 	ip_list, err := b.base.GetAll(string(update.CallbackQuery.Message.Chat.ID))
+			// 	if err != nil {
+			// 		log.Printf("Ошибка чтения из БД данных о подписках")
+			// 	}
+			// 	log.Println(ip_list)
+			// 	log.Println(getICO(fsk_ees, ip_list))
+			// 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(fsk_ees, ip_list)+"ПАО \"ФСК ЕЭС\"", "u"+fsk_ees),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_volga, ip_list)+"ПАО \"Россети Волга\"", "u"+rosseti_volga),
+			// 		),
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_yug, ip_list)+"ПАО \"Россети Юг\"", "u"+rosseti_yug),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_centr, ip_list)+"ПАО \"Россети Центр\"", "u"+rosseti_centr),
+			// 		),
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sibir, ip_list)+"ПАО \"Россети Сибири\"", "u"+rosseti_sibir),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_cip, ip_list)+"ПАО \"Россети ЦиП\"", "u"+rosseti_cip),
+			// 		),
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_ural, ip_list)+"ПАО \"МРСК Урала\"", "u"+rosseti_ural),
+			// 			tgbotapi.NewInlineKeyboardButtonData(getICO(rosseti_sev_zap, ip_list)+"ПАО \"Россети Северо-Запада\"", "u"+rosseti_sev_zap),
+			// 		),
+			// 	)
+			// 	msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+			// 	_, err = b.bot.Send(msg)
+			// 	if err != nil {
+			// 		log.Println(err)
+			// 	}
 
-			case "u_other":
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "u"+rusgydro),
-						tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "u"+krea),
-					),
-				)
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
+			// case "u_other":
+			// 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+			// 		tgbotapi.NewInlineKeyboardRow(
+			// 			tgbotapi.NewInlineKeyboardButtonData("ПАО \"РусГидро\"", "u"+rusgydro),
+			// 			tgbotapi.NewInlineKeyboardButtonData("АО \"Концерн Росэнергоатом\"", "u"+krea),
+			// 		),
+			// 	)
+			// 	msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+			// 	_, err := b.bot.Send(msg)
+			// 	if err != nil {
+			// 		log.Println(err)
+			// 	}
 
 			default:
 				first_letter := string([]rune(q)[0])
@@ -256,5 +289,12 @@ func (b *Bot) make_notify(ip string, news string) {
 
 		}
 	}
+}
 
+func getICO(ip string, ip_list map[string]string) string {
+	if ip_list[ip] == "subscride" {
+		return "✅ "
+	} else {
+		return "⬜ "
+	}
 }
