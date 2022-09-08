@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 	"tg_bot_minenergo_ip/pkg/databases"
 	parser_ip "tg_bot_minenergo_ip/pkg/parser"
 	"time"
@@ -324,24 +325,34 @@ func (b *Bot) LoadIP() {
 		rosseti_sibir, rosseti_ural, rosseti_sev_zap, rosseti_sev_kav, rusgydro, drsk, krea}
 
 	for {
+		var wg sync.WaitGroup
+		wg.Add(len(full_ip_list))
+		start_time := time.Now().UnixMilli()
 		for _, ip := range full_ip_list {
-			new_report, err := parser_ip.Parse(ip)
-			if err != nil {
-				log.Printf("Ошибка парсинга: %s", err)
-			}
-			old_report, err := b.base.Get(ip, ip)
-			if err != nil {
-				log.Printf("Ошибка чтения из БД при парсинге новости: %s", err)
-			}
-			if (new_report != old_report) && (new_report != "ERROR") {
-				log.Printf("Обнаружена новая запись ИП %s: %s", getIPname(ip), new_report)
-				b.make_notify(ip, new_report)
-				err = b.base.Save(ip, new_report, ip)
+			go func(ip string) {
+				new_report, err := parser_ip.Parse(ip)
 				if err != nil {
-					log.Printf("Ошибка сохранения в БД новой новости по ИП: %s", err)
+					log.Printf("Ошибка парсинга: %s", err)
 				}
-			}
+				old_report, err := b.base.Get(ip, ip)
+				if err != nil {
+					log.Printf("Ошибка чтения из БД при парсинге новости: %s", err)
+				}
+				if (new_report != old_report) && (new_report != "ERROR") {
+					log.Printf("Обнаружена новая запись ИП %s: %s", getIPname(ip), new_report)
+					b.make_notify(ip, new_report)
+					err = b.base.Save(ip, new_report, ip)
+					if err != nil {
+						log.Printf("Ошибка сохранения в БД новой новости по ИП: %s", err)
+					}
+				}
+				wg.Done()
+			}(ip)
 		}
+		wg.Wait()
+		end_time := time.Now().UnixMilli()
+		delta := end_time - start_time
+		log.Printf("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
 		time.Sleep(time.Minute * 10)
 	}
 }
@@ -354,13 +365,14 @@ func (b *Bot) make_notify(ip string, news string) {
 
 	for id, key := range users {
 		if key == "subscride" {
-			msg_text := fmt.Sprintf("Размещены материалы ИП **%s**:\n%s\n[https://minenergo.gov.ru/node/%s]", getIPname(ip), news, ip)
+			msg_text := fmt.Sprintf("Размещены материалы ИП *%s*:\n%s\n[https://minenergo.gov.ru/node/%s]", getIPname(ip), news, ip)
 			// msg_text := "Размещены материалы ИП **" + getIPname(ip) + "**:\n" + news
 			id_int64, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
 				log.Println(err)
 			}
 			msg := tgbotapi.NewMessage(id_int64, msg_text)
+			msg.ParseMode = "Markdown"
 			_, err = b.bot.Send(msg)
 			if err != nil {
 				log.Println(err)
