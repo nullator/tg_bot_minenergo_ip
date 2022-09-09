@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -52,5 +51,5 @@ func getGup(first_entry string, ip_code string, m map[int]string) (int, error) {
 			return i + 1, nil
 		}
 	}
-	return 0, errors.New("не удалось распарсить 4190")
+	return 0, fmt.Errorf("не удалось распарсить код %s", ip_code)
 }
