@@ -12,16 +12,12 @@ import (
 )
 
 func (b *Bot) LoadIP() {
-	var full_ip_list []string
-	for key := range b.config.IP {
-		full_ip_list = append(full_ip_list, key)
-	}
 
 	for {
 		var wg sync.WaitGroup
-		wg.Add(len(full_ip_list))
+		wg.Add(len(b.config.IP))
 		start_time := time.Now().UnixMilli()
-		for _, ip := range full_ip_list {
+		for ip := range b.config.IP {
 			go func(ip string) {
 				new_report, err := parser.Parse(b.config.IP[ip].First_entry, ip)
 				if err != nil {

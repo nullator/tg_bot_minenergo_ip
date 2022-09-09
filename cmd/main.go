@@ -38,7 +38,7 @@ func main() {
 
 	bot.Debug = false
 
-	db, err := bolt.Open("bolt.db", 0600, nil)
+	db, err := bolt.Open(cfg.DB_file, 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,8 +47,6 @@ func main() {
 
 	tg_bot := telegram.NewBot(bot, base, cfg)
 	go tg_bot.LoadIP()
-	if err := tg_bot.Start(); err != nil {
-		log.Fatalln(err)
-	}
+	tg_bot.Start()
 
 }

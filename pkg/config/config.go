@@ -13,6 +13,7 @@ type Config struct {
 	IP            map[string]IP
 	TelegramToken string
 	IP_file       string
+	DB_file       string
 }
 
 type IP struct {
@@ -63,5 +64,6 @@ func parseEnv(cfg *Config) error {
 
 	cfg.TelegramToken = viper.GetString("TOKEN")
 	cfg.IP_file = viper.GetString("IP_file")
+	cfg.DB_file = viper.GetString("DB_file")
 	return nil
 }

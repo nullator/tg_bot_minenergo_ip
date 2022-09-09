@@ -18,14 +18,12 @@ func NewBot(bot *tgbotapi.BotAPI, base databases.Database, config *config.Config
 	return &Bot{bot, base, config}
 }
 
-func (b *Bot) Start() error {
+func (b *Bot) Start() {
 	log.Printf("Authorized on account %s\n", b.bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := b.bot.GetUpdatesChan(u)
 	b.handleUpdates(updates)
-
-	return nil
 }
 
 func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
@@ -76,6 +74,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			case "unsubscribe":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
 				numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
+
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 				_, err = b.bot.Send(msg)
 				if err != nil {
