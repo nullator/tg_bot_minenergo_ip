@@ -45,7 +45,7 @@ func main() {
 	defer db.Close()
 	base := boltdb.NewDatabase(db)
 
-	tg_bot := telegram.NewBot(bot, base)
+	tg_bot := telegram.NewBot(bot, base, cfg)
 	go tg_bot.LoadIP()
 	if err := tg_bot.Start(); err != nil {
 		log.Fatalln(err)

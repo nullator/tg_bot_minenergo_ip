@@ -8,6 +8,7 @@
 *.db*
 /log
 main
+*.json
 
 # Test binary, built with `go test -c`
 *.test
