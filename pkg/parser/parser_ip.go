@@ -14,7 +14,7 @@ func Parse(first_entry string, ip_code string) (string, error) {
 	req, err := http.NewRequest("GET", baseUrl, nil)
 	if err != nil {
 		log.Printf("Не удалось сформировать request: %s", err)
-		return "", err
+		return "ERROR", err
 	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
 	req.Header.Add("Referer", baseUrl)
@@ -25,6 +25,7 @@ func Parse(first_entry string, ip_code string) (string, error) {
 	}
 	if res.StatusCode != 200 {
 		log.Printf("Ошибка запроса к серверу: (code %d) %s", res.StatusCode, err)
+		return "ERROR", err
 	}
 	doc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
