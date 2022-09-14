@@ -27,8 +27,8 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 func (b *Bot) handleStartComand(message *tgbotapi.Message) error {
 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-			tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+			tgbotapi.NewInlineKeyboardButtonData("Настроить подписку", "subscribe"),
+			// tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
 		),
 	)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Ты можешь подписаться или отписаться от рассылки на уведомления о размещении материалов проектов ИП:")

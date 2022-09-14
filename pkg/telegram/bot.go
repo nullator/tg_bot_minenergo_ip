@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"fmt"
 	"log"
 	"tg_bot_minenergo_ip/pkg/config"
 	"tg_bot_minenergo_ip/pkg/databases"
@@ -51,8 +52,8 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			case "start":
 				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("Подписаться", "subscribe"),
-						tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
+						tgbotapi.NewInlineKeyboardButtonData("Настроить подписку", "subscribe"),
+						// tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
 					),
 				)
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
@@ -71,30 +72,50 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					log.Println(err)
 				}
 
-			case "unsubscribe":
-				var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-				numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
+			// case "unsubscribe":
+			// 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+			// 	numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
 
-				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err := b.bot.Send(msg)
-				if err != nil {
-					log.Println(err)
-				}
+			// 	msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+			// 	_, err := b.bot.Send(msg)
+			// 	if err != nil {
+			// 		log.Println(err)
+			// 	}
 
 			default:
 				first_letter := string([]rune(q)[0])
 				code := string([]rune(q)[1:5])
 				if first_letter == "s" {
-					log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
-					b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
-
-					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-					numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
-					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err := b.bot.Send(msg)
+					status, err := b.base.Get(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID), code)
 					if err != nil {
 						log.Println(err)
 					}
+					if status == "subscride" {
+						log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
+
+					} else {
+						log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
+					}
+					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+					numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
+					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					_, err = b.bot.Send(msg)
+					if err != nil {
+						log.Println(err)
+					}
+
+					// log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+					// b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
+
+					// var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+					// numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
+					// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
+					// _, err := b.bot.Send(msg)
+					// if err != nil {
+					// 	log.Println(err)
+					// }
 				}
 				if first_letter == "u" {
 					log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
@@ -108,6 +129,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						log.Println(err)
 					}
 				}
+
 			}
 		}
 	}
