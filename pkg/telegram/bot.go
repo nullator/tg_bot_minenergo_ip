@@ -40,11 +40,11 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			log.Printf("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
 
 		} else if update.CallbackQuery != nil {
-			msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
-			_, err := b.bot.Send(msg)
-			if err != nil {
-				log.Println(err)
-			}
+			// msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, tgbotapi.InlineKeyboardMarkup{InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+			// _, err := b.bot.Send(msg)
+			// if err != nil {
+			// 	log.Println(err)
+			// }
 
 			q := update.CallbackQuery.Data
 			switch q {
@@ -66,7 +66,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
 
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err = b.bot.Send(msg)
+				_, err := b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
@@ -76,7 +76,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
 
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-				_, err = b.bot.Send(msg)
+				_, err := b.bot.Send(msg)
 				if err != nil {
 					log.Println(err)
 				}
@@ -91,7 +91,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
 					numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err = b.bot.Send(msg)
+					_, err := b.bot.Send(msg)
 					if err != nil {
 						log.Println(err)
 					}
@@ -103,7 +103,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
 					numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err = b.bot.Send(msg)
+					_, err := b.bot.Send(msg)
 					if err != nil {
 						log.Println(err)
 					}
