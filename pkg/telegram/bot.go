@@ -95,7 +95,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
 					} else {
-						log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
 						b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
 					}
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
