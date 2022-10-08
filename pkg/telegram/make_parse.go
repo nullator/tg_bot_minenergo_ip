@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -19,7 +20,9 @@ func (b *Bot) LoadIP() {
 		start_time := time.Now().UnixMilli()
 		for ip := range b.config.IP {
 			go func(ip string) {
-				new_report, err := parser.Parse(b.config.IP[ip].First_entry, ip)
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				new_report, err := parser.Parse(ctx, b.config.IP[ip].First_entry, ip)
 				if err != nil {
 					log.Printf("Ошибка парсинга: %s", err)
 				}
