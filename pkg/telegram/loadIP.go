@@ -13,7 +13,6 @@ import (
 )
 
 func (b *Bot) LoadIP() {
-
 	for {
 		var wg sync.WaitGroup
 		wg.Add(len(b.config.IP))
@@ -22,7 +21,7 @@ func (b *Bot) LoadIP() {
 			go func(ip string) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
-				new_report, err := parser.Parse(ctx, b.config.IP[ip].First_entry, ip)
+				new_report, err := parser.Start(ctx, b.config.IP[ip].First_entry, ip)
 				if err != nil {
 					log.Printf("Ошибка парсинга: %s", err)
 				}
@@ -41,6 +40,7 @@ func (b *Bot) LoadIP() {
 				wg.Done()
 			}(ip)
 		}
+
 		wg.Wait()
 		end_time := time.Now().UnixMilli()
 		delta := end_time - start_time

@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func Parse(ctx context.Context, first_entry string, ip_code string) (string, error) {
+func Start(ctx context.Context, first_entry string, ip_code string) (string, error) {
 	baseUrl := fmt.Sprintf("https://minenergo.gov.ru/node/%s", ip_code)
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, baseUrl, nil)
@@ -46,13 +46,6 @@ func Parse(ctx context.Context, first_entry string, ip_code string) (string, err
 		log.Printf("Ошибка получения первой записи (gap) ИП: %s", err)
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Printf("Таймаут парсинга https://minenergo.gov.ru/node/%s", ip_code)
-		return "ERROR", nil
-	default:
-
-	}
 	return m[gap], nil
 
 }
