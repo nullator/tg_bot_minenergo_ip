@@ -41,7 +41,6 @@ func (b *Bot) startParse(ctx_c context.Context, c chan string) {
 	for {
 		select {
 		case <-ctx_c.Done():
-			log.Println("Получена комманда на закрытие горутины")
 			return
 		default:
 			ip := <-c
