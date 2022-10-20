@@ -24,7 +24,7 @@ func (b *Bot) LoadIP() {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 11; i++ {
 			go b.startParse(ctx, c)
 		}
 
