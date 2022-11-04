@@ -22,7 +22,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	wrt := io.MultiWriter(os.Stdout, f)
 	log.SetOutput(wrt)
 
@@ -42,7 +48,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	base := boltdb.NewDatabase(db)
 
 	tg_bot := telegram.NewBot(bot, base, cfg)
