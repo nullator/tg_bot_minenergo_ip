@@ -44,7 +44,6 @@ func Start(ctx context.Context, first_entry string, ip_code string) (string, err
 	gap, err := getGup(first_entry, ip_code, m)
 	if err != nil {
 		log.Printf("Ошибка получения первой записи (gap) ИП: %s", err)
-		return "ERROR", err
 	}
 
 	return m[gap], nil
