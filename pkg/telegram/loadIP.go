@@ -3,7 +3,6 @@ package telegram
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"sync"
 	"tg_bot_minenergo_ip/pkg/parser"
@@ -32,7 +31,7 @@ func (b *Bot) LoadIP() {
 		cancel()
 		end_time := time.Now().UnixMilli()
 		delta := end_time - start_time
-		log.Printf("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
+		b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
 		time.Sleep(time.Minute * 10)
 	}
 }
@@ -46,20 +45,20 @@ func (b *Bot) startParse(ctx_c context.Context, c chan string) {
 			ip := <-c
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			new_report, err := parser.Start(ctx, b.config.IP[ip].First_entry, ip)
+			new_report, err := parser.Start(ctx, b.config.IP[ip].First_entry, ip, b.logger)
 			if err != nil {
-				log.Printf("Ошибка парсинга: %s", err)
+				b.logger.Errorf("Ошибка парсинга: %s", err.Error())
 			}
 			old_report, err := b.base.Get(ip, ip)
 			if err != nil {
-				log.Printf("Ошибка чтения из БД при парсинге новости: %s", err)
+				b.logger.Errorf("Ошибка чтения из БД при парсинге новости: %s", err.Error())
 			}
 			if (new_report != old_report) && (new_report != "ERROR") {
-				log.Printf("Обнаружена новая запись ИП %s: %s", b.config.IP[ip].Name, new_report)
+				b.logger.Infof("Обнаружена новая запись ИП %s: %s", b.config.IP[ip].Name, new_report)
 				b.make_notify(ip, new_report)
 				err = b.base.Save(ip, new_report, ip)
 				if err != nil {
-					log.Printf("Ошибка сохранения в БД новой новости по ИП: %s", err)
+					b.logger.Errorf("Ошибка сохранения в БД новой новости по ИП: %s", err.Error())
 				}
 			}
 			wg.Done()
@@ -71,7 +70,7 @@ func (b *Bot) startParse(ctx_c context.Context, c chan string) {
 func (b *Bot) make_notify(ip string, news string) {
 	users, err := b.base.GetAll(ip)
 	if err != nil {
-		log.Printf("Ошибка чтения из БД данных о подписчиках")
+		b.logger.Errorf("Ошибка чтения из БД данных о подписчиках - %s", err.Error())
 	}
 
 	for id, key := range users {
@@ -79,13 +78,13 @@ func (b *Bot) make_notify(ip string, news string) {
 			msg_text := fmt.Sprintf("*%s*\nРазмещена новая запись:\n%s\n[https://minenergo.gov.ru/node/%s]", b.config.IP[ip].Name, news, ip)
 			id_int64, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
-				log.Println(err)
+				b.logger.Error(err)
 			}
 			msg := tgbotapi.NewMessage(id_int64, msg_text)
 			msg.ParseMode = "Markdown"
 			_, err = b.bot.Send(msg)
 			if err != nil {
-				log.Println(err)
+				b.logger.Error(err)
 			}
 
 		}

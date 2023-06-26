@@ -2,9 +2,10 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
+	"tg_bot_minenergo_ip/pkg/logger"
 
 	"github.com/spf13/viper"
 )
@@ -22,7 +23,7 @@ type IP struct {
 	First_entry string `json:"first_entry"`
 }
 
-func Init() (*Config, error) {
+func Init(logger *logger.Logger) (*Config, error) {
 	var cfg Config
 	ip_list := make(map[string]IP)
 	var ip_data []byte
@@ -33,20 +34,20 @@ func Init() (*Config, error) {
 
 	f, err := os.Open(cfg.IP_file)
 	if err != nil {
-		log.Printf("Ошибка открытия json файла с ИП %s\n", err)
+		logger.Errorf("Ошибка открытия json файла с ИП - %s", err.Error())
 		return nil, err
 	}
 
-	ip_data, err = ioutil.ReadAll(f)
+	ip_data, err = io.ReadAll(f)
 	if err != nil {
-		log.Printf("Ошибка чтения json файла с ИП %s\n", err)
+		logger.Errorf("Ошибка чтения json файла с ИП - %s", err.Error())
 		return nil, err
 	}
 	f.Close()
 
 	err = json.Unmarshal([]byte(ip_data), &ip_list)
 	if err != nil {
-		log.Printf("Ошибка распаковки json в структуру гороскопа %s\n", err)
+		logger.Errorf("Ошибка распаковки json в структуру ИП - %s", err.Error())
 		return nil, err
 	}
 

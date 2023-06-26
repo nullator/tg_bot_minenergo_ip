@@ -2,9 +2,9 @@ package telegram
 
 import (
 	"fmt"
-	"log"
 	"tg_bot_minenergo_ip/pkg/config"
 	"tg_bot_minenergo_ip/pkg/databases"
+	"tg_bot_minenergo_ip/pkg/logger"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -13,14 +13,16 @@ type Bot struct {
 	bot    *tgbotapi.BotAPI
 	base   databases.Database
 	config *config.Config
+	logger *logger.Logger
 }
 
-func NewBot(bot *tgbotapi.BotAPI, base databases.Database, config *config.Config) *Bot {
-	return &Bot{bot, base, config}
+func NewBot(bot *tgbotapi.BotAPI, base databases.Database,
+	config *config.Config, logger *logger.Logger) *Bot {
+	return &Bot{bot, base, config, logger}
 }
 
 func (b *Bot) Start() {
-	log.Printf("Authorized on account %s\n", b.bot.Self.UserName)
+	b.logger.Infof("Authorized on account %s", b.bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := b.bot.GetUpdatesChan(u)
@@ -29,16 +31,16 @@ func (b *Bot) Start() {
 
 func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 	for update := range updates {
-		if update.Message != nil { // If we got a message
+		if update.Message != nil {
 			if update.Message.IsCommand() {
-				log.Printf("[%s] ввёл команду %s", update.Message.From.UserName, update.Message.Text)
+				b.logger.Infof("[%s] ввёл команду %s", update.Message.From.UserName, update.Message.Text)
 				if err := b.handleCommand(update.Message); err != nil {
-					log.Printf("При обработке команды %s произошла ошибка %s", update.Message.Command(), err)
+					b.logger.Errorf("При обработке команды %s произошла ошибка %s", update.Message.Command(), err)
 				}
 				continue
 			}
 
-			log.Printf("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
+			b.logger.Infof("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
 
 		} else if update.CallbackQuery != nil {
 			q := update.CallbackQuery.Data
@@ -53,7 +55,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 				_, err := b.bot.Send(msg)
 				if err != nil {
-					log.Println(err)
+					b.logger.Error(err)
 				}
 
 			case "subscribe":
@@ -63,7 +65,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 				_, err := b.bot.Send(msg)
 				if err != nil {
-					log.Println(err)
+					b.logger.Error(err)
 				}
 
 			default:
@@ -72,14 +74,14 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				if first_letter == "s" {
 					status, err := b.base.Get(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID), code)
 					if err != nil {
-						log.Println(err)
+						b.logger.Error(err)
 					}
 					if status == "subscride" {
-						log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						b.logger.Infof("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
 						b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
 					} else {
-						log.Printf("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						b.logger.Infof("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
 						b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
 					}
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
@@ -87,12 +89,12 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 					_, err = b.bot.Send(msg)
 					if err != nil {
-						log.Println(err)
+						b.logger.Error(err)
 					}
 
 				}
 				if first_letter == "u" {
-					log.Printf("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+					b.logger.Infof("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
 					b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
 					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
@@ -100,7 +102,7 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 					_, err := b.bot.Send(msg)
 					if err != nil {
-						log.Println(err)
+						b.logger.Error(err)
 					}
 				}
 

@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"fmt"
-	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -10,7 +9,7 @@ import (
 func make_subscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", id_chat))
 	if err != nil {
-		log.Printf("Ошибка чтения из БД данных о подписках")
+		b.logger.Errorf("Ошибка чтения из БД данных о подписках - %s", err.Error())
 	}
 
 	full_ip_list := make(map[int]string)
@@ -50,7 +49,7 @@ func make_unsubscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
 
 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", id_chat))
 	if err != nil {
-		log.Printf("Ошибка чтения из БД данных о подписке")
+		b.logger.Errorf("Ошибка чтения из БД данных о подписке - %s", err.Error())
 	}
 
 	subscribe_ip_list := make(map[int]string)
