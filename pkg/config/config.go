@@ -15,6 +15,8 @@ type Config struct {
 	TelegramToken string
 	IP_file       string
 	DB_file       string
+	LogServer     string
+	LogAuthToken  string
 }
 
 type IP struct {
@@ -31,6 +33,8 @@ func Init(logger *logger.Logger) (*Config, error) {
 	if err := parseEnv(&cfg); err != nil {
 		return nil, err
 	}
+	logger.Server = cfg.LogServer
+	logger.AuthToken = cfg.LogAuthToken
 
 	f, err := os.Open(cfg.IP_file)
 	if err != nil {
@@ -66,5 +70,7 @@ func parseEnv(cfg *Config) error {
 	cfg.TelegramToken = viper.GetString("TOKEN")
 	cfg.IP_file = viper.GetString("IP_file")
 	cfg.DB_file = viper.GetString("DB_file")
+	cfg.LogServer = viper.GetString("LOGGER_SERVER")
+	cfg.LogAuthToken = viper.GetString("LOGGER_AUTH")
 	return nil
 }

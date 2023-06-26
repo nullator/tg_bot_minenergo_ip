@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -32,20 +31,22 @@ type Log struct {
 }
 
 type Logger struct {
-	name   string
-	logger *log.Logger
+	Name      string
+	logger    *log.Logger
+	Server    string
+	AuthToken string
 }
 
 var _ LoggerInterface = (*Logger)(nil)
 
 func New(name string, l *log.Logger) *Logger {
-	return &Logger{name: name, logger: l}
+	return &Logger{Name: name, logger: l, Server: "", AuthToken: ""}
 }
 
 func (l *Logger) Info(args ...interface{}) {
 	output := fmt.Sprint(args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "info")
+	err := l.sendLogToServer(output, 0, "info")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -54,7 +55,7 @@ func (l *Logger) Info(args ...interface{}) {
 func (l *Logger) Infof(format string, args ...interface{}) {
 	output := fmt.Sprintf(format, args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "info")
+	err := l.sendLogToServer(output, 0, "info")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -63,7 +64,7 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 func (l *Logger) Warn(args ...interface{}) {
 	output := fmt.Sprint(args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "warning")
+	err := l.sendLogToServer(output, 0, "warning")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -72,7 +73,7 @@ func (l *Logger) Warn(args ...interface{}) {
 func (l *Logger) Warnf(format string, args ...interface{}) {
 	output := fmt.Sprintf(format, args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "warning")
+	err := l.sendLogToServer(output, 0, "warning")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -81,7 +82,7 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 func (l *Logger) Error(args ...interface{}) {
 	output := fmt.Sprint(args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "error")
+	err := l.sendLogToServer(output, 0, "error")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -90,7 +91,7 @@ func (l *Logger) Error(args ...interface{}) {
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	output := fmt.Sprintf(format, args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "error")
+	err := l.sendLogToServer(output, 0, "error")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -99,7 +100,7 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 func (l *Logger) Fatal(args ...interface{}) {
 	output := fmt.Sprint(args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "fatal")
+	err := l.sendLogToServer(output, 0, "fatal")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
@@ -108,15 +109,15 @@ func (l *Logger) Fatal(args ...interface{}) {
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	output := fmt.Sprintf(format, args...)
 	l.logger.Print(output)
-	err := sendLogToServer(output, 0, "fatal")
+	err := l.sendLogToServer(output, 0, "fatal")
 	if err != nil {
 		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
 	}
 }
 
-func sendLogToServer(message string, code int, level string) error {
+func (l *Logger) sendLogToServer(message string, code int, level string) error {
 	request := Log{
-		App:     os.Getenv("APP_NAME"),
+		App:     l.Name,
 		Message: message,
 		Code:    code,
 		Level:   level,
@@ -128,11 +129,11 @@ func sendLogToServer(message string, code int, level string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", os.Getenv("LOGGER_SERVER"), bytes.NewBuffer(json_request))
+	req, err := http.NewRequest("POST", l.Server, bytes.NewBuffer(json_request))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", os.Getenv("LOGGER_AUTH"))
+	req.Header.Set("Authorization", l.AuthToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
