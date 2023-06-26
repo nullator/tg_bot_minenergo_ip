@@ -23,11 +23,11 @@ func (b *Bot) LoadIP() {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		// go b.startParse(ctx, c)
+		go b.startParse(ctx, c)
 
-		for i := 0; i < 3; i++ {
-			go b.startParse(ctx, c)
-		}
+		// for i := 0; i < 3; i++ {
+		// 	go b.startParse(ctx, c)
+		// }
 
 		wg.Wait()
 		cancel()
