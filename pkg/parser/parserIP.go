@@ -33,7 +33,7 @@ func Start(ctx context.Context, first_entry string, ip_code string,
 	}
 	doc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
-		logger.Errorf("Не удалось распарсить страницу: %s", err)
+		logger.Warnf("Не удалось распарсить страницу: %s", err)
 		return "ERROR", err
 	}
 	defer res.Body.Close()

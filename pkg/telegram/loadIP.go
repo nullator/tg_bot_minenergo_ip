@@ -49,7 +49,7 @@ func (b *Bot) startParse(ctx_c context.Context, c chan string) {
 			defer cancel()
 			new_report, err := parser.Start(ctx, b.config.IP[ip].First_entry, ip, b.logger)
 			if err != nil {
-				b.logger.Errorf("Ошибка парсинга: %s", err.Error())
+				b.logger.Warnf("Не удалось распарсить страницу: %s", err.Error())
 			}
 			old_report, err := b.base.Get(ip, ip)
 			if err != nil {
