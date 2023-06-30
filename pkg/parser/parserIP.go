@@ -24,7 +24,7 @@ func Start(ctx context.Context, first_entry string, ip_code string,
 
 	res, err := client.Do(req)
 	if err != nil {
-		logger.Errorf("Не удалось выполнить запрос к серверу: %s", err)
+		logger.Warnf("Не удалось выполнить запрос к серверу: %s", err)
 		return "ERROR", err
 	}
 	if res.StatusCode != 200 {
