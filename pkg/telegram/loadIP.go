@@ -89,6 +89,8 @@ func (b *Bot) make_notify(ip string, news string) {
 				b.logger.Error(err)
 			}
 
+			time.Sleep(time.Millisecond * 300)
+
 		}
 	}
 }

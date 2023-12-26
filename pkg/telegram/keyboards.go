@@ -82,7 +82,7 @@ func make_unsubscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
 	}
 
 	numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "start"),
+		tgbotapi.NewInlineKeyboardButtonData("⬅️ Сохранить", "start"),
 	),
 	)
 
