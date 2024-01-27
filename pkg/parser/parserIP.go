@@ -2,13 +2,14 @@ package parser
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"tg_bot_minenergo_ip/pkg/logger"
+	"tg_bot_minenergo_ip/pkg/models"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -89,14 +90,23 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	}
 
 	// save body to file
-	file := fmt.Sprintf("%s.json", ip_code)
-	err = os.WriteFile(file, body, 0644)
+	// file := fmt.Sprintf("%s.json", ip_code)
+	// err = os.WriteFile(file, body, 0644)
+	// if err != nil {
+	// 	slog.Error("error writing file: %s", err)
+	// 	return "ERROR", err
+	// }
+
+	var IPdata models.FullData
+	err = json.Unmarshal([]byte(body), &IPdata)
 	if err != nil {
-		slog.Error("error writing file: %s", err)
+		logger.Errorf("Ошибка распаковки json в структуру ИП - %s", err.Error())
 		return "ERROR", err
 	}
 
-	return "OK", nil
+	rec := IPdata.Docs[1].Recods[0].Dsc
+
+	return rec, nil
 
 }
 
