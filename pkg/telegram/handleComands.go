@@ -50,7 +50,7 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 		return err
 	}
 
-	msg_text := fmt.Sprintf("Выполнена подписка на %s", ip)
+	msg_text := fmt.Sprintf("Выполнена подписка на %s", b.config.IP[ip].Name)
 	msg := tgbotapi.NewMessage(113053945, msg_text)
 	_, err = b.bot.Send(msg)
 	if err != nil {
