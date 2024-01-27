@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -58,7 +59,7 @@ func Start(ctx context.Context, first_entry string, ip_code string,
 
 }
 
-func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, error) {
+func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (*models.IPrecord, error) {
 	baseURL := "https://minenergo.gov.ru/api/v1/"
 	params := url.Values{}
 	params.Add("action", "organizations.getItemDetail")
@@ -68,7 +69,7 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+params.Encode(), nil)
 	if err != nil {
 		logger.Errorf("Не удалось сформировать request: %s", err)
-		return "ERROR", err
+		return nil, err
 	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537")
 
@@ -81,19 +82,19 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Errorf("Не удалось выполнить запрос к серверу: %s", err)
-		return "ERROR", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Errorf("unexpected status: %s", resp.Status)
-		return "ERROR", fmt.Errorf("unexpected status: %s", resp.Status)
+		return nil, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		slog.Error("error reading body: %s", err)
-		return "ERROR", err
+		return nil, err
 	}
 
 	// save body to file
@@ -108,12 +109,13 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	err = json.Unmarshal([]byte(body), &IPdata)
 	if err != nil {
 		logger.Errorf("Ошибка распаковки json в структуру ИП - %s", err.Error())
-		return "ERROR", err
+		return nil, err
 	}
 
-	rec := IPdata.Docs[1].Recods[0].Dsc
+	rec := IPdata.Docs[1].Recods[0]
+	rec.Dsc = html.UnescapeString(rec.Dsc)
 
-	return rec, nil
+	return &rec, nil
 
 }
 

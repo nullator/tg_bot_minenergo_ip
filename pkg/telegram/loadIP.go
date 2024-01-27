@@ -89,7 +89,9 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 			ctx_to, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 
-			new_report, err := parser.GetIP(ctx_to, ip, b.logger)
+			data, err := parser.GetIP(ctx_to, ip, b.logger)
+
+			new_report := data.Dsc
 			if err != nil {
 				b.logger.Warnf("Не удалось распарсить запись: %s", err.Error())
 			}
@@ -102,7 +104,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 
 			if (new_report != old_report) && (new_report != "ERROR") {
 				b.logger.Infof("Обнаружена новая запись ИП %s: %s", b.config.IP[ip].Name, new_report)
-				b.make_notify(ip_db_code, new_report)
+				b.make_notify(ip_db_code, b.config.IP[ip].Name, new_report, data.Src)
 				err = b.base.Save(ip_db_code, new_report, ip_db_code)
 				if err != nil {
 					b.logger.Errorf("Ошибка сохранения в БД новой новости по ИП: %s", err.Error())
@@ -115,21 +117,21 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 
 }
 
-func (b *Bot) make_notify(ip string, news string) {
-	users, err := b.base.GetAll(ip)
+func (b *Bot) make_notify(ip_code string, ip_name string, news string, src string) {
+	users, err := b.base.GetAll(ip_code)
 	if err != nil {
 		b.logger.Errorf("Ошибка чтения из БД данных о подписчиках - %s", err.Error())
 	}
 
 	for id, key := range users {
 		if key == "subscride" {
-			msg_text := fmt.Sprintf("*%s*\nРазмещена новая запись:\n%s\n[https://minenergo.gov.ru/node/%s]", b.config.IP[ip].Name, news, ip)
+			msg_text := fmt.Sprintf("*%s*\nРазмещена новая запись:\n%s\n[https://minenergo.gov.ru%s]", ip_name, news, src)
 			id_int64, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
 				b.logger.Error(err)
 			}
 			msg := tgbotapi.NewMessage(id_int64, msg_text)
-			msg.ParseMode = "Markdown"
+			msg.ParseMode = tgbotapi.ModeMarkdown
 			_, err = b.bot.Send(msg)
 			if err != nil {
 				b.logger.Error(err)
