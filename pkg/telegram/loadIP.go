@@ -19,7 +19,7 @@ func (b *Bot) LoadIP(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			b.logger.Info("Остановка функции LoadIP")
+			b.logger.Info("Завершение функции LoadIP")
 			return
 		default:
 			start_time := time.Now().UnixMilli()
@@ -28,7 +28,7 @@ func (b *Bot) LoadIP(ctx context.Context) {
 				c <- ip
 			}
 
-			go b.startParse(ctx, c)
+			go b.startParse_v2(ctx, c)
 
 			wg.Wait()
 			end_time := time.Now().UnixMilli()

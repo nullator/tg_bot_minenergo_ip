@@ -77,6 +77,6 @@ func main() {
 
 	tg_bot := telegram.NewBot(bot, base, cfg, logger)
 	go tg_bot.LoadIP(ctx)
-	tg_bot.Start()
+	tg_bot.Start(ctx)
 
 }
