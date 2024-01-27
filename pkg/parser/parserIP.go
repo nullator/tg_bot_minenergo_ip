@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,7 +63,7 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	params := url.Values{}
 	params.Add("action", "organizations.getItemDetail")
 	params.Add("lang", "ru")
-	params.Add("code", "pao_federalnaya_setevaya_kompaniya_rosseti")
+	params.Add("code", ip_code)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+params.Encode(), nil)
 	if err != nil {
@@ -71,7 +72,13 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, 
 	}
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537")
 
-	resp, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		logger.Errorf("Не удалось выполнить запрос к серверу: %s", err)
 		return "ERROR", err

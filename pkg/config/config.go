@@ -20,9 +20,9 @@ type Config struct {
 }
 
 type IP struct {
-	Name        string `json:"name"`
-	ID          int    `json:"id"`
-	First_entry string `json:"first_entry"`
+	Name     string `json:"name"`
+	ID       int    `json:"id"`
+	Old_code string `json:"old_code"`
 }
 
 func Init(logger *logger.Logger) (*Config, error) {
