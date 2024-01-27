@@ -3,7 +3,10 @@ package parser
 import (
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"tg_bot_minenergo_ip/pkg/logger"
 
 	"github.com/PuerkitoBio/goquery"
@@ -49,6 +52,45 @@ func Start(ctx context.Context, first_entry string, ip_code string,
 	}
 
 	return m[gap], nil
+
+}
+
+func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (string, error) {
+	url := fmt.Sprintf("https://minenergo.gov.ru/api/v1/?action=organizations.getItemDetail&lang=ru&code=%s", ip_code)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		logger.Errorf("Не удалось сформировать request: %s", err)
+		return "ERROR", err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Errorf("Не удалось выполнить запрос к серверу: %s", err)
+		return "ERROR", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Errorf("unexpected status: %s", resp.Status)
+		return "ERROR", fmt.Errorf("unexpected status: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		slog.Error("error reading body: %s", err)
+		return "ERROR", err
+	}
+
+	// save body to file
+	file := fmt.Sprintf("%s.json", ip_code)
+	err = os.WriteFile(file, body, 0644)
+	if err != nil {
+		slog.Error("error writing file: %s", err)
+		return "ERROR", err
+	}
+
+	return "OK", nil
 
 }
 

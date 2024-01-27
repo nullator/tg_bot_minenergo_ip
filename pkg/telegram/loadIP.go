@@ -28,11 +28,9 @@ func (b *Bot) LoadIP(ctx context.Context) {
 				c <- ip
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
 			go b.startParse(ctx, c)
 
 			wg.Wait()
-			cancel()
 			end_time := time.Now().UnixMilli()
 			delta := end_time - start_time
 			b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
@@ -74,6 +72,25 @@ func (b *Bot) startParse(ctx_c context.Context, c chan string) {
 					b.logger.Errorf("Ошибка сохранения в БД новой новости по ИП: %s", err.Error())
 				}
 			}
+			wg.Done()
+		}
+	}
+
+}
+
+func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
+	for {
+		select {
+		case <-ctx.Done():
+			b.logger.Info("Остановка функции startParse_v2")
+			return
+		default:
+			ip := <-c
+			ctx_to, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+
+			parser.GetIP(ctx_to, ip, b.logger)
+
 			wg.Done()
 		}
 	}
