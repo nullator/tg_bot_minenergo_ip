@@ -13,28 +13,39 @@ import (
 
 var wg sync.WaitGroup
 
-func (b *Bot) LoadIP() {
+func (b *Bot) LoadIP(ctx context.Context) {
 	c := make(chan string, len(b.config.IP))
+
 	for {
-		start_time := time.Now().UnixMilli()
-		wg.Add(len(b.config.IP))
-		for ip := range b.config.IP {
-			c <- ip
+		select {
+		case <-ctx.Done():
+			b.logger.Info("Остановка функции LoadIP")
+			return
+		default:
+			start_time := time.Now().UnixMilli()
+			wg.Add(len(b.config.IP))
+			for ip := range b.config.IP {
+				c <- ip
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			go b.startParse(ctx, c)
+
+			wg.Wait()
+			cancel()
+			end_time := time.Now().UnixMilli()
+			delta := end_time - start_time
+			b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
+
+			// sleep 20 min
+			select {
+			case <-ctx.Done():
+				b.logger.Info("Завершение функции LoadIP")
+				return
+			case <-time.After(20 * time.Minute):
+			}
+
 		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		go b.startParse(ctx, c)
-
-		// for i := 0; i < 3; i++ {
-		// 	go b.startParse(ctx, c)
-		// }
-
-		wg.Wait()
-		cancel()
-		end_time := time.Now().UnixMilli()
-		delta := end_time - start_time
-		b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
-		time.Sleep(time.Minute * 10)
 	}
 }
 

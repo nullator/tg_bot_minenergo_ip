@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	"tg_bot_minenergo_ip/pkg/config"
 	boltdb "tg_bot_minenergo_ip/pkg/databases/boltDB"
 	"tg_bot_minenergo_ip/pkg/logger"
@@ -60,8 +64,19 @@ func main() {
 	}()
 	base := boltdb.NewDatabase(db)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		// catch signal and invoke graceful termination
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+		<-stop
+		slog.Info("stop app")
+		cancel()
+	}()
+
 	tg_bot := telegram.NewBot(bot, base, cfg, logger)
-	go tg_bot.LoadIP()
+	go tg_bot.LoadIP(ctx)
 	tg_bot.Start()
 
 }
