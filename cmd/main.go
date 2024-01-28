@@ -16,9 +16,15 @@ import (
 
 	"github.com/boltdb/bolt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// load env
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("error loading env: %v", err)
+	}
+
 	err := os.MkdirAll("log", os.ModePerm)
 	if err != nil {
 		log.Fatalln(err)

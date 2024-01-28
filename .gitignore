@@ -7,8 +7,10 @@
 .env
 *.db*
 /log
+/output
 main
 *.json
+*.sh
 
 # Test binary, built with `go test -c`
 *.test
