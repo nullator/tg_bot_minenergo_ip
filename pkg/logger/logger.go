@@ -2,25 +2,17 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"log/slog"
 )
-
-type LoggerInterface interface {
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
-	Fatal(args ...interface{})
-
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
-}
 
 type Log struct {
 	App     string    `json:"app"`
@@ -30,94 +22,80 @@ type Log struct {
 	Time    time.Time `json:"time"`
 }
 
-type Logger struct {
-	Name      string
-	logger    *log.Logger
-	Server    string
-	AuthToken string
+type CustomSlogHandlerInterface interface {
+	Enabled(ctx context.Context, level slog.Level) bool
+	Handle(ctx context.Context, r slog.Record) error
+	WithAttrs(attrs []slog.Attr) slog.Handler
+	WithGroup(name string) slog.Handler
+	Handler() slog.Handler
 }
 
-var _ LoggerInterface = (*Logger)(nil)
-
-func New(name string, l *log.Logger) *Logger {
-	return &Logger{Name: name, logger: l, Server: "", AuthToken: ""}
+type CustomSlogHandler struct {
+	handler slog.Handler
 }
 
-func (l *Logger) Info(args ...interface{}) {
-	output := fmt.Sprint(args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "info")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
+var _ CustomSlogHandlerInterface = (*CustomSlogHandler)(nil)
+
+func NewCustomSlogHandler(h slog.Handler) *CustomSlogHandler {
+	return &CustomSlogHandler{h}
+}
+
+func (h *CustomSlogHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.handler.Enabled(ctx, level)
+}
+
+func (h *CustomSlogHandler) Handle(ctx context.Context, r slog.Record) error {
+	var msg = r.Message
+	var lvl string
+	var code int = 0
+
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == "code" {
+			if a.Value.Kind().String() == "Int64" {
+				code = int(a.Value.Int64())
+				return true
+			}
+		}
+		msg = fmt.Sprintf("%s; %s: %s", msg, a.Key, a.Value)
+		return true
+	})
+
+	switch r.Level.String() {
+	case "DEBUG":
+		return h.handler.Handle(ctx, r)
+	case "INFO":
+		lvl = "info"
+	case "WARN":
+		lvl = "warning"
+	case "ERROR":
+		lvl = "error"
 	}
+
+	go func(message string, code int, level string) {
+		err := sendLogToServer(message, code, level)
+		if err != nil {
+			log.Printf("error sending log to server: %v", err)
+		}
+	}(msg, code, lvl)
+
+	return h.handler.Handle(ctx, r)
 }
 
-func (l *Logger) Infof(format string, args ...interface{}) {
-	output := fmt.Sprintf(format, args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "info")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
+func (h *CustomSlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return NewCustomSlogHandler(h.handler.WithAttrs(attrs))
 }
 
-func (l *Logger) Warn(args ...interface{}) {
-	output := fmt.Sprint(args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "warning")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
+func (h *CustomSlogHandler) WithGroup(name string) slog.Handler {
+	return NewCustomSlogHandler(h.handler.WithGroup(name))
 }
 
-func (l *Logger) Warnf(format string, args ...interface{}) {
-	output := fmt.Sprintf(format, args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "warning")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
+func (h *CustomSlogHandler) Handler() slog.Handler {
+	return h.handler
 }
 
-func (l *Logger) Error(args ...interface{}) {
-	output := fmt.Sprint(args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "error")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
-}
-
-func (l *Logger) Errorf(format string, args ...interface{}) {
-	output := fmt.Sprintf(format, args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "error")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
-}
-
-func (l *Logger) Fatal(args ...interface{}) {
-	output := fmt.Sprint(args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "fatal")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
-}
-
-func (l *Logger) Fatalf(format string, args ...interface{}) {
-	output := fmt.Sprintf(format, args...)
-	l.logger.Print(output)
-	err := l.sendLogToServer(output, 0, "fatal")
-	if err != nil {
-		l.logger.Printf("ERROR SEND TO LOG SERVER: %s\n", err)
-	}
-}
-
-func (l *Logger) sendLogToServer(message string, code int, level string) error {
+func sendLogToServer(message string, code int, level string) error {
 	request := Log{
-		App:     l.Name,
+		App:     os.Getenv("APP_NAME"),
 		Message: message,
 		Code:    code,
 		Level:   level,
@@ -129,14 +107,17 @@ func (l *Logger) sendLogToServer(message string, code int, level string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", l.Server, bytes.NewBuffer(json_request))
+	req, err := http.NewRequest(
+		"POST",
+		os.Getenv("LOGGER_SERVER"),
+		bytes.NewBuffer(json_request))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", l.AuthToken)
+	req.Header.Set("Authorization", os.Getenv("LOGGER_AUTH"))
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

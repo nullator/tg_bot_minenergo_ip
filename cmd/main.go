@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -36,30 +37,38 @@ func main() {
 
 	l := log.Default()
 	wrt := io.MultiWriter(os.Stdout, f)
-	log.SetOutput(wrt)
 	l.SetOutput(wrt)
-	logger := logger.New("minenergo", l)
 
-	cfg, err := config.Init(logger)
+	// setup slog
+	log, err := setupLogger(os.Getenv("ENV"))
 	if err != nil {
-		logger.Fatal(err)
+		l.Fatal(err)
+	}
+	slog.SetDefault(log)
+
+	log.Info("start app", slog.String("env", os.Getenv("ENV")))
+	log.Debug("debug level is enabled")
+
+	cfg, err := config.Init()
+	if err != nil {
+		l.Fatal(err)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
-		logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	bot.Debug = false
 
 	db, err := bolt.Open(cfg.DB_file, 0600, nil)
 	if err != nil {
-		logger.Fatal(err)
+		l.Fatal(err)
 	}
 	defer func() {
 		err := db.Close()
 		if err != nil {
-			logger.Fatal(err)
+			l.Fatal(err)
 		}
 	}()
 	base := boltdb.NewDatabase(db)
@@ -75,8 +84,33 @@ func main() {
 		cancel()
 	}()
 
-	tg_bot := telegram.NewBot(bot, base, cfg, logger)
+	tg_bot := telegram.NewBot(bot, base, cfg)
 	go tg_bot.LoadIP(ctx)
 	tg_bot.Start(ctx)
+}
 
+func setupLogger(env string) (*slog.Logger, error) {
+	var log *slog.Logger
+
+	switch env {
+	// для локальной разработки и отладки используется дефолтный json handler
+	case "local":
+		h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: false,
+		})
+		log = slog.New(h)
+	// для продакшена используется кастомный handler, который отправляет логи на сервер
+	case "prod":
+		h := logger.NewCustomSlogHandler(slog.NewJSONHandler(
+			os.Stdout, &slog.HandlerOptions{
+				Level:     slog.LevelInfo,
+				AddSource: false,
+			}))
+		log = slog.New(h)
+	default:
+		return nil, fmt.Errorf("incorrect error level: %s", env)
+	}
+
+	return log, nil
 }

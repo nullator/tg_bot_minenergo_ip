@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -34,19 +35,19 @@ func (b *Bot) handleStartComand(message *tgbotapi.Message) error {
 	msg.ReplyMarkup = numericKeyboard
 	_, err := b.bot.Send(msg)
 
-	b.logger.Info("Выполнена команда Start")
+	slog.Info("Выполнена команда Start")
 	return err
 }
 
 func (b *Bot) subscribe(chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "subscride", ip)
 	if err != nil {
-		b.logger.Errorf("Ошибка сохранения в БД данных о подписке - %s", err.Error())
+		slog.Error("Ошибка сохранения в БД данных о подписке", slog.String("error", err.Error()))
 		return err
 	}
 	err = b.base.Save(ip, "subscride", fmt.Sprintf("%d", chatID))
 	if err != nil {
-		b.logger.Errorf("Ошибка сохранения в БД данных о подписке - %s", err.Error())
+		slog.Error("Ошибка сохранения в БД данных о подписке", slog.String("error", err.Error()))
 		return err
 	}
 
@@ -54,25 +55,29 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 	msg := tgbotapi.NewMessage(113053945, msg_text)
 	_, err = b.bot.Send(msg)
 	if err != nil {
-		b.logger.Errorf("Не удалось отправить обратную связь: %s", err.Error())
+		slog.Error("Не удалось отправить обратную связь", slog.String("error", err.Error()))
 	}
 
-	b.logger.Infof("Успешно выполнена подписка на %s", b.config.IP[ip].Name)
+	slog.Info("Выполнена подписка",
+		slog.String("user_id", fmt.Sprintf("%d", chatID)),
+		slog.String("ip", b.config.IP[ip].Name))
 	return err
 }
 
 func (b *Bot) unsubscribe(chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "unsubscride", ip)
 	if err != nil {
-		b.logger.Errorf("Ошибка сохранения в БД данных о подписке - %s", err.Error())
+		slog.Error("Ошибка сохранения в БД данных о подписке", slog.String("error", err.Error()))
 		return err
 	}
 	err = b.base.Save(ip, "unsubscride", fmt.Sprintf("%d", chatID))
 	if err != nil {
-		b.logger.Errorf("Ошибка сохранения в БД данных о подписке - %s", err.Error())
+		slog.Error("Ошибка сохранения в БД данных о подписке", slog.String("error", err.Error()))
 		return err
 	}
 
-	b.logger.Infof("Успешно выполнена отписка от %s", b.config.IP[ip].Name)
+	slog.Info("Выполнена отписка",
+		slog.String("user_id", fmt.Sprintf("%d", chatID)),
+		slog.String("ip", b.config.IP[ip].Name))
 	return err
 }

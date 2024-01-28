@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"log/slog"
 	"os"
-	"tg_bot_minenergo_ip/pkg/logger"
 
 	"github.com/spf13/viper"
 )
@@ -25,7 +25,7 @@ type IP struct {
 	Code string `json:"code"`
 }
 
-func Init(logger *logger.Logger) (*Config, error) {
+func Init() (*Config, error) {
 	var cfg Config
 	ip_list := make(map[string]IP)
 	var ip_data []byte
@@ -33,25 +33,24 @@ func Init(logger *logger.Logger) (*Config, error) {
 	if err := parseEnv(&cfg); err != nil {
 		return nil, err
 	}
-	logger.Server = cfg.LogServer
-	logger.AuthToken = cfg.LogAuthToken
 
 	f, err := os.Open(cfg.IP_file)
 	if err != nil {
-		logger.Errorf("Ошибка открытия json файла с ИП - %s", err.Error())
+		slog.Error("Ошибка открытия json файла с ИП - %s", slog.String("error", err.Error()))
 		return nil, err
 	}
 
 	ip_data, err = io.ReadAll(f)
 	if err != nil {
-		logger.Errorf("Ошибка чтения json файла с ИП - %s", err.Error())
+		slog.Error("Ошибка чтения json файла с ИП - %s", slog.String("error", err.Error()))
 		return nil, err
 	}
 	f.Close()
 
 	err = json.Unmarshal([]byte(ip_data), &ip_list)
 	if err != nil {
-		logger.Errorf("Ошибка распаковки json в структуру ИП - %s", err.Error())
+		slog.Error("Ошибка распаковки json в структуру ИП - %s",
+			slog.String("error", err.Error()))
 		return nil, err
 	}
 

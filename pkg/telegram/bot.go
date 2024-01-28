@@ -3,9 +3,9 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"tg_bot_minenergo_ip/pkg/config"
 	"tg_bot_minenergo_ip/pkg/databases"
-	"tg_bot_minenergo_ip/pkg/logger"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -14,16 +14,16 @@ type Bot struct {
 	bot    *tgbotapi.BotAPI
 	base   databases.Database
 	config *config.Config
-	logger *logger.Logger
 }
 
 func NewBot(bot *tgbotapi.BotAPI, base databases.Database,
-	config *config.Config, logger *logger.Logger) *Bot {
-	return &Bot{bot, base, config, logger}
+	config *config.Config) *Bot {
+	return &Bot{bot, base, config}
 }
 
 func (b *Bot) Start(ctx context.Context) {
-	b.logger.Infof("Authorized on account %s", b.bot.Self.UserName)
+	slog.Info("Authorized on account %s",
+		slog.String("account", b.bot.Self.UserName))
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := b.bot.GetUpdatesChan(u)
@@ -34,26 +34,31 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 	for {
 		select {
 		case <-ctx.Done():
-			b.logger.Info("Остановка telegram бота")
+			slog.Info("Остановка telegram бота")
 			return
 
 		case update, ok := <-updates:
 			if !ok {
-				b.logger.Error("telegram update chan closed")
+				slog.Error("Telegram update chan closed")
 				return
 			}
 
 			if update.Message != nil {
 				if update.Message.IsCommand() {
-					b.logger.Infof("[%s] ввёл команду %s", update.Message.From.UserName, update.Message.Text)
+					slog.Info("Пользователь ввёл команду",
+						slog.String("user", update.Message.From.UserName),
+						slog.String("command", update.Message.Command()))
 					if err := b.handleCommand(update.Message); err != nil {
-						b.logger.Errorf("При обработке команды %s произошла ошибка %s", update.Message.Command(), err)
+						slog.Error("При обработке команды произошла ошибка",
+							slog.String("command", update.Message.Command()),
+							slog.String("error", err.Error()))
 					}
 					continue
 				}
 
-				b.logger.Infof("[%s] отправил сообщение: %s", update.Message.From.UserName, update.Message.Text)
-
+				slog.Info("Пользователь отправил сообщение:",
+					slog.String("user", update.Message.From.UserName),
+					slog.String("message", update.Message.Text))
 			} else if update.CallbackQuery != nil {
 				q := update.CallbackQuery.Data
 				switch q {
@@ -67,7 +72,7 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 					_, err := b.bot.Send(msg)
 					if err != nil {
-						b.logger.Error(err)
+						slog.Error("error sending message", slog.String("error", err.Error()))
 					}
 
 				case "subscribe":
@@ -77,7 +82,7 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 					_, err := b.bot.Send(msg)
 					if err != nil {
-						b.logger.Error(err)
+						slog.Error("error sending message", slog.String("error", err.Error()))
 					}
 
 				default:
@@ -86,14 +91,18 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 					if first_letter == "s" {
 						status, err := b.base.Get(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID), code)
 						if err != nil {
-							b.logger.Error(err)
+							slog.Error("error getting status from db", slog.String("error", err.Error()))
 						}
 						if status == "subscride" {
-							b.logger.Infof("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+							slog.Info("Пользователь запросил отписку",
+								slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+								slog.String("ip", b.config.IP[code].Name))
 							b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
 						} else {
-							b.logger.Infof("Пользователь %s запросил подписку на %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+							slog.Info("Пользователь запросил подписку",
+								slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+								slog.String("ip", b.config.IP[code].Name))
 							b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
 						}
 						var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
@@ -101,12 +110,14 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 						msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 						_, err = b.bot.Send(msg)
 						if err != nil {
-							b.logger.Error(err)
+							slog.Error("error sending message", slog.String("error", err.Error()))
 						}
 
 					}
 					if first_letter == "u" {
-						b.logger.Infof("Пользователь %s запросил отписку от %s", update.CallbackQuery.Message.Chat.UserName, b.config.IP[code].Name)
+						slog.Info("Пользователь запросил отписку",
+							slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+							slog.String("ip", b.config.IP[code].Name))
 						b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
 
 						var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
@@ -114,7 +125,7 @@ func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel
 						msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
 						_, err := b.bot.Send(msg)
 						if err != nil {
-							b.logger.Error(err)
+							slog.Error("error sending message", slog.String("error", err.Error()))
 						}
 					}
 
