@@ -22,7 +22,7 @@ func NewBot(bot *tgbotapi.BotAPI, base databases.Database,
 }
 
 func (b *Bot) Start(ctx context.Context) {
-	slog.Info("Authorized on account %s",
+	slog.Info("Authorized on account",
 		slog.String("account", b.bot.Self.UserName))
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
