@@ -1,18 +1,24 @@
 package boltdb
 
 import (
+	"sync"
+
 	"github.com/boltdb/bolt"
 )
 
 type Database struct {
-	db *bolt.DB
+	db    *bolt.DB
+	mutex sync.Mutex
 }
 
 func NewDatabase(db *bolt.DB) *Database {
-	return &Database{db}
+	return &Database{db: db}
 }
 
 func (db *Database) Save(key string, value string, bucket string) error {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	err := db.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		if err != nil {
@@ -24,6 +30,9 @@ func (db *Database) Save(key string, value string, bucket string) error {
 }
 
 func (db *Database) Get(key string, bucket string) (string, error) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	var value string
 	err := db.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
@@ -42,6 +51,9 @@ func (db *Database) Get(key string, bucket string) (string, error) {
 }
 
 func (db *Database) GetAll(bucket string) (map[string]string, error) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	value := make(map[string]string)
 
 	err := db.db.View(func(tx *bolt.Tx) error {
