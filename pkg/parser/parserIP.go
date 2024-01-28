@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -59,7 +58,7 @@ func Start(ctx context.Context, first_entry string, ip_code string,
 
 }
 
-func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (*models.IPrecord, error) {
+func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) ([]models.IPrecord, error) {
 	baseURL := "https://minenergo.gov.ru/api/v1/"
 	params := url.Values{}
 	params.Add("action", "organizations.getItemDetail")
@@ -112,10 +111,9 @@ func GetIP(ctx context.Context, ip_code string, logger *logger.Logger) (*models.
 		return nil, err
 	}
 
-	rec := IPdata.Docs[1].Recods[0]
-	rec.Dsc = html.UnescapeString(rec.Dsc)
+	rec := IPdata.Docs[1].Recods
 
-	return &rec, nil
+	return rec, nil
 
 }
 

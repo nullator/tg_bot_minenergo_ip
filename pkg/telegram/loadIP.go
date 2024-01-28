@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"html"
 	"strconv"
 	"sync"
 	"tg_bot_minenergo_ip/pkg/parser"
@@ -28,12 +29,27 @@ func (b *Bot) LoadIP(ctx context.Context) {
 				c <- ip
 			}
 
-			go b.startParse_v2(ctx, c)
+			err := b.base.Save("all", "0", "count")
+			if err != nil {
+				b.logger.Errorf("Ошибка сохранения в БД счетчика записей ИП: %s", err.Error())
+			}
 
+			go b.startParse_v2(ctx, c)
 			wg.Wait()
+
 			end_time := time.Now().UnixMilli()
 			delta := end_time - start_time
-			b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд", delta)
+
+			count_str, err := b.base.Get("all", "count")
+			if err != nil {
+				b.logger.Errorf("Ошибка чтения из БД счетчика записей ИП: %s", err.Error())
+			}
+			count, err := strconv.Atoi(count_str)
+			if err != nil {
+				b.logger.Errorf("Ошибка преобразования счетчика записей ИП: %s", err.Error())
+			}
+
+			b.logger.Infof("Выполнен парсинг сайта МЭ за время %v милисекунд, обработано %v записей", delta, count)
 
 			// sleep 20 min
 			select {
@@ -91,10 +107,38 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 
 			code := b.config.IP[ip].Code
 			data, err := parser.GetIP(ctx_to, code, b.logger)
+			last_report := data[0]
 
-			new_report := data.Dsc
+			new_report := data[0].Dsc
+			new_report = html.UnescapeString(new_report)
 			if err != nil {
 				b.logger.Warnf("Не удалось распарсить запись: %s", err.Error())
+			}
+
+			old_count, err := b.base.Get(ip, "count")
+			if err != nil {
+				b.logger.Errorf("Ошибка чтения из БД при парсинге новости: %s", err.Error())
+			}
+			new_count := strconv.Itoa(len(data))
+			if new_count != old_count {
+				b.logger.Warnf("Обнаружено изменение количества записей ИП %s: %s", b.config.IP[ip].Name, new_count)
+
+				b.base.Save(ip, new_count, "count")
+			}
+
+			count_str, err := b.base.Get("all", "count")
+			if err != nil {
+				b.logger.Errorf("Ошибка чтения из БД счетчика записей ИП: %s", err.Error())
+			}
+			count, err := strconv.Atoi(count_str)
+			if err != nil {
+				b.logger.Errorf("Ошибка преобразования счетчика записей ИП: %s", err.Error())
+			}
+			count += len(data)
+			count_str = strconv.Itoa(count)
+			err = b.base.Save("all", count_str, "count")
+			if err != nil {
+				b.logger.Errorf("Ошибка сохранения в БД счетчика записей ИП: %s", err.Error())
 			}
 
 			old_report, err := b.base.Get(ip, ip)
@@ -104,7 +148,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 
 			if (new_report != old_report) && (new_report != "ERROR") {
 				b.logger.Infof("Обнаружена новая запись ИП %s: %s", b.config.IP[ip].Name, new_report)
-				b.make_notify(ip, b.config.IP[ip].Name, new_report, data.Src)
+				b.make_notify(ip, b.config.IP[ip].Name, new_report, last_report.Src)
 				err = b.base.Save(ip, new_report, ip)
 				if err != nil {
 					b.logger.Errorf("Ошибка сохранения в БД новой новости по ИП: %s", err.Error())
