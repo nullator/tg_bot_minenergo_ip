@@ -174,6 +174,13 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 					slog.Info("Обнаружена новая запись ИП",
 						slog.String("ip", b.config.IP[ip].Name),
 						slog.String("new_report", new_report))
+
+					// Игнорировать изменение последовательности записей ИП
+					if new_count == old_count {
+						slog.Warn("Количество записей ИП не поменялось, рассылка не выполняется")
+						return
+					}
+
 					b.make_notify(ip, b.config.IP[ip].Name, new_report, last_report.Src)
 					err = b.base.Save(ip, new_report, ip)
 					if err != nil {
