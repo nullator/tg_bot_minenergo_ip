@@ -97,14 +97,6 @@ func GetIP(ctx context.Context, ip_code string) ([]models.IPrecord, error) {
 		return nil, err
 	}
 
-	// save body to file for debug
-	// file := fmt.Sprintf("%s.json", ip_code)
-	// err = os.WriteFile(file, body, 0644)
-	// if err != nil {
-	// 	slog.Error("error writing file: %s", err)
-	// 	return "ERROR", err
-	// }
-
 	var IPdata models.FullData
 	err = json.Unmarshal([]byte(body), &IPdata)
 	if err != nil {
@@ -117,12 +109,3 @@ func GetIP(ctx context.Context, ip_code string) ([]models.IPrecord, error) {
 	return rec, nil
 
 }
-
-// func getGup(first_entry string, ip_code string, m map[int]string) (int, error) {
-// 	for i := 0; i < len(m); i++ {
-// 		if m[i] == first_entry {
-// 			return i + 1, nil
-// 		}
-// 	}
-// 	return 0, fmt.Errorf("не удалось распарсить код %s", ip_code)
-// }
