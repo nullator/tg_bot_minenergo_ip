@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strconv"
 	"sync"
+	"tg_bot_minenergo_ip/pkg/models"
 	"tg_bot_minenergo_ip/pkg/parser"
 	"time"
 
@@ -30,6 +31,9 @@ func (b *Bot) LoadIP(ctx context.Context) {
 				c <- ip
 			}
 
+			// Переменная для хранения предупреждений
+			warn := models.LogCollector{}
+
 			// Есть сомнения что Минэнерго предоставляет корретные данны в json формате, поэтому для отладки первое время планирую считать количество записей ИП
 			err := b.base.Save("all", "0", "count")
 			if err != nil {
@@ -37,8 +41,14 @@ func (b *Bot) LoadIP(ctx context.Context) {
 					slog.String("error", err.Error()))
 			}
 
-			go b.startParse_v2(ctx, c)
+			go b.startParse_v2(ctx, c, &warn)
 			wg.Wait()
+
+			// Проверка наличия warning
+			if len(warn.Get()) > 0 {
+				slog.Warn("Обнаружены предупреждения",
+					slog.Any("warn", warn.Get()))
+			}
 
 			end_time := time.Now().UnixMilli()
 			delta := end_time - start_time
@@ -71,7 +81,7 @@ func (b *Bot) LoadIP(ctx context.Context) {
 	}
 }
 
-func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
+func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCollector) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,7 +98,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 				code := b.config.IP[ip].Code
 				data, err := parser.GetIP(ctx_to, code)
 				if len(data) == 0 {
-					slog.Warn("Получена пустая запись ИП", slog.String("ИП", b.config.IP[ip].Name))
+					w.Add(fmt.Sprintf("Получена пустая запись ИП %s", b.config.IP[ip].Name))
 					return
 				}
 				last_report := data[0]
@@ -96,7 +106,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 				new_report := data[0].Dsc
 				new_report = html.UnescapeString(new_report)
 				if err != nil {
-					slog.Warn("Не удалось получить данные по api", slog.String("error", err.Error()))
+					w.Add(fmt.Sprintf("Не удалось получить данные по api для ИП %s", b.config.IP[ip].Name))
 				}
 
 				// Проверяем изменилось ли количество записей ИП (для отладки)
@@ -107,11 +117,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 				}
 				new_count := strconv.Itoa(len(data))
 				if new_count != old_count {
-					slog.Warn("Обнаружено изменение количества записей ИП",
-						slog.String("ip", b.config.IP[ip].Name),
-						slog.String("old_count", old_count),
-						slog.String("new_count", new_count))
-
+					w.Add(fmt.Sprintf("Обнаружено изменение количества записей ИП %s, old: %s, new: %s", b.config.IP[ip].Name, old_count, new_count))
 					err = b.base.Save(ip, new_count, "count")
 					if err != nil {
 						slog.Error("Ошибка сохранения в БД нового количества записей ИП",
@@ -146,7 +152,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string) {
 
 					// Игнорировать изменение последовательности записей ИП
 					if new_count == old_count {
-						slog.Warn("Количество записей ИП не поменялось, рассылка не выполняется")
+						w.Add(fmt.Sprintf("Количество записей ИП %s не поменялось, рассылка не выполняется", b.config.IP[ip].Name))
 						return
 					}
 
