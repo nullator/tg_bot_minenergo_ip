@@ -96,7 +96,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCol
 				defer cancel()
 
 				code := b.config.IP[ip].Code
-				data, err := parser.GetIP(ctx_to, code)
+				data, err := parser.GetIP(ctx_to, code, w)
 				if len(data) == 0 {
 					w.Add(fmt.Sprintf("Получена пустая запись ИП %s", b.config.IP[ip].Name))
 					return

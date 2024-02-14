@@ -57,7 +57,7 @@ import (
 // }
 
 // Выполняет запрос к api Минэнерго и возвращает список записей ИП
-func GetIP(ctx context.Context, ip_code string) ([]models.IPrecord, error) {
+func GetIP(ctx context.Context, ip_code string, w *models.LogCollector) ([]models.IPrecord, error) {
 	baseURL := "https://minenergo.gov.ru/api/v1/"
 	params := url.Values{}
 	params.Add("action", "organizations.getItemDetail")
@@ -80,6 +80,11 @@ func GetIP(ctx context.Context, ip_code string) ([]models.IPrecord, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		if err.Error() == "context deadline exceeded" {
+			warn := fmt.Sprintf("Превышено время ожидания ответа от сервера Минэнерго (%s)", ip_code)
+			w.Add(warn)
+			return nil, nil
+		}
 		slog.Error("Не удалось выполнить запрос к серверу: %s",
 			slog.String("error", err.Error()))
 		return nil, err
@@ -93,6 +98,11 @@ func GetIP(ctx context.Context, ip_code string) ([]models.IPrecord, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		if err.Error() == "context deadline exceeded" {
+			warn := fmt.Sprintf("Превышено время ожидания ответа от сервера Минэнерго (%s)", ip_code)
+			w.Add(warn)
+			return nil, nil
+		}
 		slog.Error("error reading body: %s", slog.String("error", err.Error()))
 		return nil, err
 	}
