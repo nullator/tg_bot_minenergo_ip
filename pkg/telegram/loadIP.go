@@ -45,7 +45,8 @@ func (b *Bot) LoadIP(ctx context.Context) {
 			wg.Wait()
 
 			// Проверка наличия warning
-			if len(warn.Get()) > 0 {
+			warns := warn.Get()
+			if len(warns) > 0 {
 				slog.Warn("Обнаружены предупреждения",
 					slog.Any("warn", warn.Get()))
 			}
@@ -151,10 +152,10 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCol
 						slog.String("new_report", new_report))
 
 					// Игнорировать изменение последовательности записей ИП
-					if new_count == old_count {
-						w.Add(fmt.Sprintf("Количество записей ИП %s не поменялось, рассылка не выполняется", b.config.IP[ip].Name))
-						return
-					}
+					// if new_count == old_count {
+					// 	w.Add(fmt.Sprintf("Количество записей ИП %s не поменялось, рассылка не выполняется", b.config.IP[ip].Name))
+					// 	return
+					// }
 
 					b.make_notify(ip, b.config.IP[ip].Name, new_report, last_report.Src)
 					err = b.base.Save(ip, new_report, ip)
