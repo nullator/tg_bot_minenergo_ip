@@ -80,7 +80,8 @@ func GetIP(ctx context.Context, ip_code string, w *models.LogCollector) ([]model
 
 	resp, err := client.Do(req)
 	if err != nil {
-		if err.Error() == "context deadline exceeded" {
+		// Проверяется не оканчивается ли текст ошибки на "context deadline exceeded"
+		if err.Error()[len(err.Error())-25:] == "context deadline exceeded" {
 			warn := fmt.Sprintf("Превышено время ожидания ответа от сервера Минэнерго (%s)", ip_code)
 			w.Add(warn)
 			return nil, nil
