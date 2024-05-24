@@ -93,7 +93,7 @@ func GetIP(ctx context.Context, ip_code string, w *models.LogCollector) ([]model
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.Error("unexpected status: %s", slog.String("status", resp.Status))
+		slog.Warn("unexpected status: %s", slog.String("status", resp.Status))
 		return nil, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 
