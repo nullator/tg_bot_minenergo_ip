@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"tg_bot_minenergo_ip/pkg/models"
+	"time"
 )
 
 // func Start(ctx context.Context, first_entry string, ip_code string) (string, error) {
@@ -76,7 +77,10 @@ func GetIP(ctx context.Context, ip_code string, w *models.LogCollector) ([]model
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   30 * time.Second,
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

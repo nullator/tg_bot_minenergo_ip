@@ -93,7 +93,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCol
 			func(ip string) {
 				defer wg.Done()
 
-				ctx_to, cancel := context.WithTimeout(ctx, 20*time.Second)
+				ctx_to, cancel := context.WithTimeout(ctx, 30*time.Second)
 				defer cancel()
 
 				code := b.config.IP[ip].Code
