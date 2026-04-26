@@ -11,6 +11,7 @@
 main
 *.json
 *.sh
+AGENTS.md
 
 # Test binary, built with `go test -c`
 *.test

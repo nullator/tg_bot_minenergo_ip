@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,9 +14,9 @@ import (
 	boltdb "tg_bot_minenergo_ip/pkg/databases/boltDB"
 	"tg_bot_minenergo_ip/pkg/logger"
 	"tg_bot_minenergo_ip/pkg/telegram"
+	"time"
 
 	"github.com/boltdb/bolt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -60,13 +61,6 @@ func main() {
 		l.Fatal(err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	bot.Debug = false
-
 	db, err := bolt.Open(cfg.DB_file, 0600, nil)
 	if err != nil {
 		l.Fatal(err)
@@ -90,9 +84,34 @@ func main() {
 		cancel()
 	}()
 
-	tg_bot := telegram.NewBot(bot, base, cfg)
+	telegramClient := telegram.NewClient(cfg)
+	tg_bot := telegram.NewBot(telegramClient, base, cfg)
 	go tg_bot.LoadIP(ctx)
-	tg_bot.Start(ctx)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(cfg.TelegramEventsPath, tg_bot.EventsHandler())
+
+	server := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("Ошибка остановки HTTP-сервера", slog.String("error", err.Error()))
+		}
+	}()
+
+	slog.Info("start HTTP server",
+		slog.String("addr", cfg.HTTPAddr),
+		slog.String("telegram_events_path", cfg.TelegramEventsPath))
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		l.Fatal(err)
+	}
 }
 
 func setupLogger(env string) (*slog.Logger, error) {

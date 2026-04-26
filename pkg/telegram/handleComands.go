@@ -1,22 +1,21 @@
 package telegram
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (
 	commandStart = "start"
 )
 
-func (b *Bot) handleCommand(message *tgbotapi.Message) error {
-	command := strings.ToLower(message.Command())
+func (b *Bot) handleCommand(ctx context.Context, message *Message, chat *Chat) error {
+	command := strings.ToLower(message.Command)
 	switch command {
 	case commandStart:
-		err := b.handleStartComand(message)
+		err := b.handleStartComand(ctx, chat.ID)
 		if err != nil {
 			return err
 		}
@@ -24,22 +23,17 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (b *Bot) handleStartComand(message *tgbotapi.Message) error {
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Настроить подписку", "subscribe"),
-			// tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-		),
-	)
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Ты можешь подписаться или отписаться от рассылки на уведомления о размещении материалов проектов ИП:")
-	msg.ReplyMarkup = numericKeyboard
-	_, err := b.bot.Send(msg)
-
+func (b *Bot) handleStartComand(ctx context.Context, chatID int64) error {
+	err := b.client.Send(ctx, SendCommand{
+		ChatID:      chatID,
+		Text:        "Ты можешь подписаться или отписаться от рассылки на уведомления о размещении материалов проектов ИП:",
+		ReplyMarkup: makeStartKeyboard(),
+	})
 	slog.Info("Выполнена команда Start")
 	return err
 }
 
-func (b *Bot) subscribe(chatID int64, ip string) error {
+func (b *Bot) subscribe(ctx context.Context, chatID int64, ip string) error {
 	err := b.base.Save(fmt.Sprintf("%d", chatID), "subscride", ip)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о подписке", slog.String("error", err.Error()))
@@ -52,8 +46,10 @@ func (b *Bot) subscribe(chatID int64, ip string) error {
 	}
 
 	msg_text := fmt.Sprintf("Выполнена подписка на %s", b.config.IP[ip].Name)
-	msg := tgbotapi.NewMessage(113053945, msg_text)
-	_, err = b.bot.Send(msg)
+	err = b.client.Send(ctx, SendCommand{
+		ChatID: 113053945,
+		Text:   msg_text,
+	})
 	if err != nil {
 		slog.Error("Не удалось отправить обратную связь", slog.String("error", err.Error()))
 	}

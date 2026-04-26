@@ -10,12 +10,11 @@ import (
 	"tg_bot_minenergo_ip/pkg/models"
 	"tg_bot_minenergo_ip/pkg/parser"
 	"time"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var wg sync.WaitGroup
 
+// LoadIP — регулярно парсит данные ИП и запускает рассылку новых записей.
 func (b *Bot) LoadIP(ctx context.Context) {
 	c := make(chan string, len(b.config.IP))
 
@@ -157,7 +156,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCol
 					// 	return
 					// }
 
-					b.make_notify(ip, b.config.IP[ip].Name, new_report, last_report.Src)
+					b.make_notify(ctx, ip, b.config.IP[ip].Name, new_report, last_report.Src)
 					err = b.base.Save(ip, new_report, ip)
 					if err != nil {
 						slog.Error("Ошибка сохранения в БД новой новости по ИП", slog.String("error", err.Error()))
@@ -169,7 +168,7 @@ func (b *Bot) startParse_v2(ctx context.Context, c chan string, w *models.LogCol
 
 }
 
-func (b *Bot) make_notify(ip_code string, ip_name string, news string, src string) {
+func (b *Bot) make_notify(ctx context.Context, ip_code string, ip_name string, news string, src string) {
 	users, err := b.base.GetAll(ip_code)
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о подписчиках", slog.String("error", err.Error()))
@@ -182,9 +181,11 @@ func (b *Bot) make_notify(ip_code string, ip_name string, news string, src strin
 			if err != nil {
 				slog.Error("Ошибка преобразования id пользователя", slog.String("error", err.Error()))
 			}
-			msg := tgbotapi.NewMessage(id_int64, msg_text)
-			msg.ParseMode = tgbotapi.ModeMarkdown
-			_, err = b.bot.Send(msg)
+			err = b.client.Send(ctx, SendCommand{
+				ChatID:    id_int64,
+				Text:      msg_text,
+				ParseMode: "Markdown",
+			})
 			if err != nil {
 				slog.Error("Не удалось отправить уведомление", slog.String("error", err.Error()))
 			}

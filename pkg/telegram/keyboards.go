@@ -3,11 +3,22 @@ package telegram
 import (
 	"fmt"
 	"log/slog"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func make_subscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
+func makeStartKeyboard() *ReplyMarkup {
+	return &ReplyMarkup{
+		InlineKeyboard: [][]InlineKeyboardButton{
+			{
+				{
+					Text:         "Настроить подписку",
+					CallbackData: "subscribe",
+				},
+			},
+		},
+	}
+}
+
+func make_subscribe_kb(b *Bot, id_chat int64) *ReplyMarkup {
 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", id_chat))
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о подписке", slog.String("error", err.Error()))
@@ -18,35 +29,44 @@ func make_subscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
 		full_ip_list[value.ID-1] = key
 	}
 
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+	numericKeyboard := &ReplyMarkup{}
 	i := 0
 	n := len(full_ip_list) / 2
 	for n > 0 {
-		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(getICO(full_ip_list[i], ip_list)+b.config.IP[full_ip_list[i]].Name, "s"+full_ip_list[i]),
-			tgbotapi.NewInlineKeyboardButtonData(getICO(full_ip_list[i+1], ip_list)+b.config.IP[full_ip_list[i+1]].Name, "s"+full_ip_list[i+1]),
-		),
-		)
+		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+			{
+				Text:         getICO(full_ip_list[i], ip_list) + b.config.IP[full_ip_list[i]].Name,
+				CallbackData: "s" + full_ip_list[i],
+			},
+			{
+				Text:         getICO(full_ip_list[i+1], ip_list) + b.config.IP[full_ip_list[i+1]].Name,
+				CallbackData: "s" + full_ip_list[i+1],
+			},
+		})
 		i += 2
 		n -= 1
 	}
 
 	if len(full_ip_list)%2 == 1 {
-		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(getICO(full_ip_list[len(full_ip_list)-1], ip_list)+b.config.IP[full_ip_list[len(full_ip_list)-1]].Name, "s"+full_ip_list[len(full_ip_list)-1]),
-		),
-		)
+		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+			{
+				Text:         getICO(full_ip_list[len(full_ip_list)-1], ip_list) + b.config.IP[full_ip_list[len(full_ip_list)-1]].Name,
+				CallbackData: "s" + full_ip_list[len(full_ip_list)-1],
+			},
+		})
 	}
 
-	numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Сохранить", "start"),
-	),
-	)
+	numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+		{
+			Text:         "⬅️ Сохранить",
+			CallbackData: "start",
+		},
+	})
 
 	return numericKeyboard
 }
 
-func make_unsubscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
+func make_unsubscribe_kb(b *Bot, id_chat int64) *ReplyMarkup {
 
 	ip_list, err := b.base.GetAll(fmt.Sprintf("%d", id_chat))
 	if err != nil {
@@ -62,30 +82,39 @@ func make_unsubscribe_kb(b *Bot, id_chat int64) tgbotapi.InlineKeyboardMarkup {
 		}
 	}
 
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
+	numericKeyboard := &ReplyMarkup{}
 	i = 0
 	n := len(subscribe_ip_list) / 2
 	for n > 0 {
-		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⛔ "+b.config.IP[subscribe_ip_list[i]].Name, "u"+subscribe_ip_list[i]),
-			tgbotapi.NewInlineKeyboardButtonData("⛔ "+b.config.IP[subscribe_ip_list[i+1]].Name, "u"+subscribe_ip_list[i+1]),
-		),
-		)
+		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+			{
+				Text:         "⛔ " + b.config.IP[subscribe_ip_list[i]].Name,
+				CallbackData: "u" + subscribe_ip_list[i],
+			},
+			{
+				Text:         "⛔ " + b.config.IP[subscribe_ip_list[i+1]].Name,
+				CallbackData: "u" + subscribe_ip_list[i+1],
+			},
+		})
 		i += 2
 		n -= 1
 	}
 
 	if len(subscribe_ip_list)%2 == 1 {
-		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⛔ "+b.config.IP[subscribe_ip_list[len(subscribe_ip_list)-1]].Name, "u"+subscribe_ip_list[len(subscribe_ip_list)-1]),
-		),
-		)
+		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+			{
+				Text:         "⛔ " + b.config.IP[subscribe_ip_list[len(subscribe_ip_list)-1]].Name,
+				CallbackData: "u" + subscribe_ip_list[len(subscribe_ip_list)-1],
+			},
+		})
 	}
 
-	numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("⬅️ Сохранить", "start"),
-	),
-	)
+	numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, []InlineKeyboardButton{
+		{
+			Text:         "⬅️ Сохранить",
+			CallbackData: "start",
+		},
+	})
 
 	return numericKeyboard
 }

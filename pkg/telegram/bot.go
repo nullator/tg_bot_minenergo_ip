@@ -6,131 +6,107 @@ import (
 	"log/slog"
 	"tg_bot_minenergo_ip/pkg/config"
 	"tg_bot_minenergo_ip/pkg/databases"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Bot — обработчик бизнес-логики Telegram-событий.
 type Bot struct {
-	bot    *tgbotapi.BotAPI
+	client *Client
 	base   databases.Database
 	config *config.Config
 }
 
-func NewBot(bot *tgbotapi.BotAPI, base databases.Database,
+// NewBot — создаёт обработчик бизнес-логики Telegram-событий.
+func NewBot(client *Client, base databases.Database,
 	config *config.Config) *Bot {
-	return &Bot{bot, base, config}
+	return &Bot{client, base, config}
 }
 
-func (b *Bot) Start(ctx context.Context) {
-	slog.Info("Authorized on account",
-		slog.String("account", b.bot.Self.UserName))
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-	updates := b.bot.GetUpdatesChan(u)
-	b.handleUpdates(ctx, updates)
-}
+// HandleEvent — обрабатывает событие, полученное от telegram-server.
+func (b *Bot) HandleEvent(ctx context.Context, event Event) error {
+	if event.Type == "command" && event.Message != nil && event.Chat != nil {
+		slog.Info("Пользователь ввёл команду",
+			slog.String("user", event.Chat.Username),
+			slog.String("command", event.Message.Command))
+		return b.handleCommand(ctx, event.Message, event.Chat)
+	}
 
-func (b *Bot) handleUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("Остановка telegram бота")
-			return
+	if event.Type == "message" && event.Message != nil && event.Chat != nil {
+		slog.Info("Пользователь отправил сообщение:",
+			slog.String("user", event.Chat.Username),
+			slog.String("message", event.Message.Text))
+		return nil
+	}
 
-		case update, ok := <-updates:
-			if !ok {
-				slog.Error("Telegram update chan closed")
-				return
+	if event.Type != "callback" || event.Callback == nil || event.Chat == nil {
+		return nil
+	}
+
+	q := event.Callback.Data
+	switch q {
+	case "start":
+		return b.client.Send(ctx, SendCommand{
+			ChatID:      event.Chat.ID,
+			Text:        "Ты можешь подписаться или отписаться от рассылки на уведомления о размещении материалов проектов ИП:",
+			ReplyMarkup: makeStartKeyboard(),
+		})
+
+	case "subscribe":
+		return b.client.Send(ctx, SendCommand{
+			ChatID:      event.Chat.ID,
+			Text:        "Выбери проекты ИП для подписки:",
+			ReplyMarkup: make_subscribe_kb(b, event.Chat.ID),
+		})
+
+	default:
+		runes := []rune(q)
+		if len(runes) < 5 {
+			slog.Error("Получен некорректный callback",
+				slog.String("callback", q))
+			return nil
+		}
+
+		first_letter := string(runes[0])
+		code := string(runes[1:5])
+		if first_letter == "s" {
+			status, err := b.base.Get(fmt.Sprintf("%d", event.Chat.ID), code)
+			if err != nil {
+				slog.Error("error getting status from db", slog.String("error", err.Error()))
 			}
-
-			if update.Message != nil {
-				if update.Message.IsCommand() {
-					slog.Info("Пользователь ввёл команду",
-						slog.String("user", update.Message.From.UserName),
-						slog.String("command", update.Message.Command()))
-					if err := b.handleCommand(update.Message); err != nil {
-						slog.Error("При обработке команды произошла ошибка",
-							slog.String("command", update.Message.Command()),
-							slog.String("error", err.Error()))
-					}
-					continue
+			if status == "subscride" {
+				slog.Info("Пользователь запросил отписку",
+					slog.String("user", event.Chat.Username),
+					slog.String("ip", b.config.IP[code].Name))
+				if err := b.unsubscribe(event.Chat.ID, code); err != nil {
+					return err
 				}
-
-				slog.Info("Пользователь отправил сообщение:",
-					slog.String("user", update.Message.From.UserName),
-					slog.String("message", update.Message.Text))
-			} else if update.CallbackQuery != nil {
-				q := update.CallbackQuery.Data
-				switch q {
-				case "start":
-					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-						tgbotapi.NewInlineKeyboardRow(
-							tgbotapi.NewInlineKeyboardButtonData("Настроить подписку", "subscribe"),
-							// tgbotapi.NewInlineKeyboardButtonData("Отписаться", "unsubscribe"),
-						),
-					)
-					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err := b.bot.Send(msg)
-					if err != nil {
-						slog.Error("error sending message", slog.String("error", err.Error()))
-					}
-
-				case "subscribe":
-					var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-					numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
-
-					msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-					_, err := b.bot.Send(msg)
-					if err != nil {
-						slog.Error("error sending message", slog.String("error", err.Error()))
-					}
-
-				default:
-					first_letter := string([]rune(q)[0])
-					code := string([]rune(q)[1:5])
-					if first_letter == "s" {
-						status, err := b.base.Get(fmt.Sprintf("%d", update.CallbackQuery.Message.Chat.ID), code)
-						if err != nil {
-							slog.Error("error getting status from db", slog.String("error", err.Error()))
-						}
-						if status == "subscride" {
-							slog.Info("Пользователь запросил отписку",
-								slog.String("user", update.CallbackQuery.Message.Chat.UserName),
-								slog.String("ip", b.config.IP[code].Name))
-							b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
-
-						} else {
-							slog.Info("Пользователь запросил подписку",
-								slog.String("user", update.CallbackQuery.Message.Chat.UserName),
-								slog.String("ip", b.config.IP[code].Name))
-							b.subscribe(update.CallbackQuery.Message.Chat.ID, code)
-						}
-						var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-						numericKeyboard = make_subscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
-						msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-						_, err = b.bot.Send(msg)
-						if err != nil {
-							slog.Error("error sending message", slog.String("error", err.Error()))
-						}
-
-					}
-					if first_letter == "u" {
-						slog.Info("Пользователь запросил отписку",
-							slog.String("user", update.CallbackQuery.Message.Chat.UserName),
-							slog.String("ip", b.config.IP[code].Name))
-						b.unsubscribe(update.CallbackQuery.Message.Chat.ID, code)
-
-						var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
-						numericKeyboard = make_unsubscribe_kb(b, update.CallbackQuery.Message.Chat.ID)
-						msg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, numericKeyboard)
-						_, err := b.bot.Send(msg)
-						if err != nil {
-							slog.Error("error sending message", slog.String("error", err.Error()))
-						}
-					}
-
+			} else {
+				slog.Info("Пользователь запросил подписку",
+					slog.String("user", event.Chat.Username),
+					slog.String("ip", b.config.IP[code].Name))
+				if err := b.subscribe(ctx, event.Chat.ID, code); err != nil {
+					return err
 				}
 			}
+			return b.client.Send(ctx, SendCommand{
+				ChatID:      event.Chat.ID,
+				Text:        "Настройки подписки обновлены:",
+				ReplyMarkup: make_subscribe_kb(b, event.Chat.ID),
+			})
+		}
+		if first_letter == "u" {
+			slog.Info("Пользователь запросил отписку",
+				slog.String("user", event.Chat.Username),
+				slog.String("ip", b.config.IP[code].Name))
+			if err := b.unsubscribe(event.Chat.ID, code); err != nil {
+				return err
+			}
+			return b.client.Send(ctx, SendCommand{
+				ChatID:      event.Chat.ID,
+				Text:        "Настройки подписки обновлены:",
+				ReplyMarkup: make_unsubscribe_kb(b, event.Chat.ID),
+			})
 		}
 	}
+
+	return nil
 }
